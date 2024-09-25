@@ -1,16 +1,34 @@
 import { ValidationError, useForm } from "@formspree/react";
 import { motion } from "framer-motion";
 import { useAtom } from "jotai";
-import { currentProjectAtom, projects } from "./Projects";
+import {
+  GithubOutlined,
+  MailOutlined,
+  LinkedinFilled,
+} from "@ant-design/icons";
+import Carousel from "./Carousel";
+import ContactButton from "./ContactButton";
+
+export const Interface = (props) => {
+  const { setSection, selected, setSelected } = props;
+  return (
+    <div className="flex flex-col items-center w-screen">
+      <AboutSection setSection={setSection} />
+      <SkillsSection />
+      <CarouselSection selected={selected} setSelected={setSelected} />
+      <SkillsSection />
+    </div>
+  );
+};
 
 const Section = (props) => {
-  const { children, mobileTop } = props;
+  const { children, mobileTop, right = false } = props;
 
   return (
     <motion.section
       className={`
         h-screen w-screen p-8 max-w-screen-2xl mx-auto
-        flex flex-col items-start
+        flex flex-col ${right ? "items-end" : "items-start"}
         ${mobileTop ? "justify-start md:justify-center" : "justify-center"}
       `}
       initial={{
@@ -28,18 +46,6 @@ const Section = (props) => {
     >
       {children}
     </motion.section>
-  );
-};
-
-export const Interface = (props) => {
-  const { setSection } = props;
-  return (
-    <div className="flex flex-col items-center w-screen">
-      <AboutSection setSection={setSection} />
-      <SkillsSection />
-      <ProjectsSection />
-      <SkillsSection />
-    </div>
   );
 };
 
@@ -91,48 +97,6 @@ const AboutSection = (props) => {
   );
 };
 
-const skills = [
-  {
-    title: "React / React Native",
-    level: 95,
-  },
-  {
-    title: "Nodejs",
-    level: 90,
-  },
-
-  {
-    title: "Typescript",
-    level: 85,
-  },
-  {
-    title: "Threejs / React Three Fiber",
-    level: 60,
-  },
-  {
-    title: "Django",
-    level: 60,
-  },
-  {
-    title: "Springboot",
-    level: 60,
-  },
-];
-const languages = [
-  {
-    title: "Spanish",
-    level: 100,
-  },
-  {
-    title: "English",
-    level: 99,
-  },
-  {
-    title: "German",
-    level: 15,
-  },
-];
-
 const SkillsSection = () => {
   return (
     <Section>
@@ -182,7 +146,7 @@ const SkillsSection = () => {
         </p>
       </motion.div>
       <motion.div
-        className="2xl:w-1/2 xl:w-1/2 lg:w-1/2 md:w-1/2 text-justify bg-indigo-500 bg-opacity-30 rounded-lg p-4 mt-8 content-center"
+        className="2xl:w-1/2 xl:w-1/2 lg:w-1/2 md:w-1/2 text-justify mt-8 flex flex-col"
         initial={{
           opacity: 0,
           y: 25,
@@ -196,15 +160,38 @@ const SkillsSection = () => {
           delay: 1,
         }}
       >
-        <h3 className="whitespace-pre-wrap text-white text-xl font-bold">
-          You can find me here:
-        </h3>
-        <ol className="whitespace-pre-wrap text-white text-md uppercase">
-          <li>github.com/astanios</li>
-          <li>info@luisdanielcastillo.com</li>
-          <li>linkedin.com/in/luis-d-castillo-c/</li>
-          <li>luisdanielcastillo.com</li>
-        </ol>
+        <ContactButton text="&nbsp;linkedin.com/in/Luis-d-castillo-c">
+          <LinkedinFilled
+            className="icon"
+            style={{
+              color: "#0072b1",
+              fontSize: 26,
+              backgroundColor: "#FFF",
+              borderRadius: 4,
+              margin: 2,
+              marginLeft: 4,
+            }}
+          />
+        </ContactButton>
+
+        <ContactButton text="&nbsp;info@luisdanielcastillo.com">
+          <MailOutlined
+            className="icon"
+            style={{
+              borderRadius: 4,
+
+              fontSize: 26,
+              marginLeft: 4,
+            }}
+          />
+        </ContactButton>
+
+        <ContactButton text="&nbsp;github.com/astanios">
+          <GithubOutlined
+            className="icon"
+            style={{ color: "white", fontSize: 30 }}
+          />
+        </ContactButton>
       </motion.div>
 
       {/* <div className="mt-8 space-y-4">
@@ -300,79 +287,10 @@ const SkillsSection = () => {
   );
 };
 
-const ProjectsSection = () => {
-  const [currentProject, setCurrentProject] = useAtom(currentProjectAtom);
-
-  const nextProject = () => {
-    setCurrentProject((currentProject + 1) % projects.length);
-  };
-
-  const previousProject = () => {
-    setCurrentProject((currentProject - 1 + projects.length) % projects.length);
-  };
-  const transition = { type: "spring", duration: 0.8 };
-  const config = {
-    initial: { x: -100, opacity: 0, transition: { ...transition, delay: 0.5 } },
-    animate: { x: 0, opacity: 1, transition: { ...transition, delay: 0 } },
-    exit: { x: -100, opacity: 0, transition: { ...transition, delay: 0 } },
-  };
+const CarouselSection = ({ selected, setSelected }) => {
   return (
-    <Section>
-      <motion.section key="main" {...config}>
-        <div className="section--container">
-          <motion.div
-            key="title"
-            initial={{ x: 100, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{
-              type: "spring",
-              damping: 5,
-              stiffness: 40,
-              restDelta: 0.001,
-              duration: 0.3,
-            }}
-          >
-            <h1>LET'S DO IT.</h1>
-          </motion.div>
-          <div className="support--content">
-            <motion.div
-              key="p"
-              initial={{ y: 100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{
-                type: "spring",
-                damping: 7,
-                stiffness: 30,
-                restDelta: 0.001,
-                duration: 0.6,
-                delay: 0.2,
-                delayChildren: 0.2,
-              }}
-            >
-              <p>
-                Create your unique and exclusive shirt with our brand-new 3D
-                customization tool. <strong>Unleash your imagination</strong>{" "}
-                and define your own style.
-              </p>
-            </motion.div>
-          </div>
-        </div>
-      </motion.section>
-      {/* <div className="flex w-full h-full gap-8 items-center justify-center">
-        <button
-          className="hover:text-indigo-600 transition-colors"
-          onClick={previousProject}
-        >
-          ← Previous
-        </button>
-        <h2 className="text-3xl md:text-5xl font-bold">Projects</h2>
-        <button
-          className="hover:text-indigo-600 transition-colors"
-          onClick={nextProject}
-        >
-          Next →
-        </button>
-      </div> */}
+    <Section right>
+      <Carousel selected={selected} setSelected={setSelected} />
     </Section>
   );
 };

@@ -19,6 +19,7 @@ import Mountain from "./Mountain";
 import Sun from "./Sun";
 import { Postpro } from "./Postpro";
 import { Marsh } from "./Marsh";
+import { IMAGES } from "../utils/images";
 
 export const Experience = (props) => {
   // const { PI } = Math;
@@ -70,9 +71,7 @@ export const Experience = (props) => {
     y: { min: -100, max: 100, value: -11, step: 1 },
     z: { min: -100, max: 100, value: -30, step: 1 },
   });
-
-  const [selected, setSelected] = useState(false);
-  const { menuOpened } = props;
+  const { menuOpened, selected, setSelected } = props;
   const { viewport } = useThree();
   const data = useScroll();
   const lightRef = useRef();
@@ -219,38 +218,23 @@ export const Experience = (props) => {
       >
         <group>
           <group position={[25, -3, 24]}>
-            <Portal
+            {/* <Portal
               rotation={[0, -Math.PI / 2, 0]}
               position={[1, 10, 2]}
               selected={selected}
-            />
+            /> */}
             <Island scale={section === 2 ? 1.6 : 1} />
             <group position={[0, 10, 0]}>
-              <Fruit
-                scale={0.5}
-                position={[0, 1.5, 0]}
-                setSelected={setSelected}
-              />
-              <Fruit
-                scale={0.5}
-                position={[0.5, 1.3, 0.5]}
-                setSelected={setSelected}
-              />
-              <Fruit
-                scale={0.5}
-                position={[0.5, 0.8, -1]}
-                setSelected={setSelected}
-              />
-              <Fruit
-                scale={0.5}
-                position={[0.3, 1, -3]}
-                setSelected={setSelected}
-              />
-              <Fruit
-                scale={0.5}
-                position={[0.5, 0, -2.3]}
-                setSelected={setSelected}
-              />
+              {IMAGES.map(({ position, id }) => (
+                <Fruit
+                  scale={0.5}
+                  selected={selected}
+                  setSelected={setSelected}
+                  id={id}
+                  position={position}
+                  key={id}
+                />
+              ))}
             </group>
           </group>
           {/* <Ocean rotation={[0, 2.05, 0]} position={[32, -0.5, -14]} /> */}

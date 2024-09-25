@@ -12,11 +12,12 @@ import { ScrollManager } from "./components/ScrollManager";
 import { framerMotionConfig } from "./config";
 import { Postpro } from "./components/Postpro";
 import { useControls } from "leva";
-
+import Header from "./components/Header";
 function App() {
   const [section, setSection] = useState(0);
   const [started, setStarted] = useState(false);
   const [menuOpened, setMenuOpened] = useState(false);
+  const [selected, setSelected] = useState(0);
   useEffect(() => {
     setMenuOpened(false);
   }, [section]);
@@ -36,12 +37,23 @@ function App() {
             <Scroll>
               <Suspense>
                 {started && (
-                  <Experience section={section} menuOpened={menuOpened} />
+                  <Experience
+                    section={section}
+                    menuOpened={menuOpened}
+                    setSelected={setSelected}
+                    selected={selected}
+                  />
                 )}
               </Suspense>
             </Scroll>
             <Scroll html>
-              {started && <Interface setSection={setSection} />}
+              {started && (
+                <Interface
+                  setSection={setSection}
+                  selected={selected}
+                  setSelected={setSelected}
+                />
+              )}
             </Scroll>
           </ScrollControls>
         </Canvas>
@@ -52,7 +64,7 @@ function App() {
         />
         <Cursor />
       </MotionConfig>
-      <Leva />
+      <Leva hidden />
     </>
   );
 }
