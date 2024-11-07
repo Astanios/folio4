@@ -1,15 +1,19 @@
-import {
-  GithubOutlined,
-  LinkedinOutlined,
-  MailOutlined,
-} from "@ant-design/icons";
-
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { StarOutlined } from "@ant-design/icons";
 
-const ContactButton = ({ text = "Hover me!", children }) => {
+const ContactButton = ({ text = "Hover me!", children, link = false }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const renderText = () => {
+    if (link) {
+      return (
+        <a href={`https://www.${text}`} target="_blank">
+          {text}
+        </a>
+      );
+    } else {
+      return text;
+    }
+  };
 
   return (
     <motion.div
@@ -19,14 +23,14 @@ const ContactButton = ({ text = "Hover me!", children }) => {
     >
       <AnimatePresence>
         <motion.div
-          className="cursor-pointer flex items-center justify-center rounded-3xl text-white p-1.5 bg-stone-700"
+          className="cursor-pointer flex items-center justify-center rounded-3xl text-white p-1.5 bg-indigo-500 bg-opacity-30"
           initial={{ opacity: 0, scaleX: 0 }}
           animate={{ opacity: 1, scaleX: 1 }}
           exit={{ opacity: 0, scaleX: 0 }}
           transition={{ duration: 0.3 }}
         >
           {children}
-          {text}
+          {renderText()}
         </motion.div>
       </AnimatePresence>
     </motion.div>

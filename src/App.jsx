@@ -5,7 +5,7 @@ import { Leva } from "leva";
 import { Suspense, useEffect, useState, useRef } from "react";
 import { Cursor } from "./components/Cursor";
 import { Experience } from "./components/Experience";
-import { Interface } from "./components/Interface";
+import Interface from "./components/Interface";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { Menu } from "./components/Menu";
 import { ScrollManager } from "./components/ScrollManager";

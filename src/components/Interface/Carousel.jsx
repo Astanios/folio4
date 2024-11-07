@@ -1,8 +1,9 @@
+import Section from "./Section";
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { wrap } from "../utils/wrap";
-import { IMAGES } from "../utils/images";
-import "./styles.scss";
+import { wrap } from "../../utils/wrap";
+import { IMAGES } from "../../utils/images";
+import "../styles.scss";
 
 const sliderVariants = {
   incoming: (direction) => ({
@@ -59,48 +60,47 @@ const Carousel = ({ selected, setSelected }) => {
   }, [selected]);
 
   return (
-    <main>
-      <div className="slider-container">
-        <div className="slider">
-          <AnimatePresence initial={false} custom={direction}>
-            <motion.div
-              key={imageCount}
-              // style={{
-              //   backgroundImage: `url(${IMAGES[activeImageIndex].imageSrc})`,
-              // }}
-              custom={direction}
-              variants={sliderVariants}
-              initial="incoming"
-              animate="active"
-              exit="exit"
-              transition={sliderTransition}
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={1}
-              onDragEnd={(_, dragInfo) => dragEndHandler(dragInfo)}
-              className="image flex justify-center items-center p-4"
-            >
-              <div className="p-4">
-                <div className="border-indigo-600 rounded-r-2xl border-2">
-                  <img
-                    className="rounded-2xl"
-                    src={IMAGES[activeImageIndex].image}
-                  />
-                </div>
-                <h1 className="text-slate-200 text-4xl font-bold my-4 font-mono">
-                  {IMAGES[activeImageIndex].title}
-                </h1>
-                <p className="text-slate-300 text-base leading-tight text-justify">
-                  {IMAGES[activeImageIndex].description}
-                </p>
-                <div className="bg-indigo-600 text-white px-4 py-2 rounded-3xl mt-4">
-                  <a href={IMAGES[activeImageIndex].url}>Visit web</a>
-                </div>
+    <div className="slider-container">
+      <div className="slider">
+        <AnimatePresence initial={false} custom={direction}>
+          <motion.div
+            key={imageCount}
+            // style={{
+            //   backgroundImage: `url(${IMAGES[activeImageIndex].imageSrc})`,
+            // }}
+            custom={direction}
+            variants={sliderVariants}
+            initial="incoming"
+            animate="active"
+            exit="exit"
+            transition={sliderTransition}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={1}
+            onDragEnd={(_, dragInfo) => dragEndHandler(dragInfo)}
+            className="image flex justify-center items-center p-4"
+          >
+            <div className="p-4">
+              <div className="border-indigo-600 rounded-r-2xl border-2">
+                <img
+                  className="rounded-2xl"
+                  src={IMAGES[activeImageIndex].image}
+                />
               </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-        {/* 
+              <h1 className="text-slate-200 text-4xl font-bold my-4 font-mono">
+                {IMAGES[activeImageIndex].title}
+              </h1>
+              <p className="text-slate-300 text-base leading-tight text-justify">
+                {IMAGES[activeImageIndex].description}
+              </p>
+              <div className="bg-indigo-600 text-white px-4 py-2 rounded-3xl mt-4">
+                <a href={IMAGES[activeImageIndex].url}>Visit web</a>
+              </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+      {/* 
         <div className="buttons">
           <button onClick={() => swipeToImage(-1)}>PREV</button>
           <button onClick={() => swipeToImage(1)}>NEXT</button>
@@ -122,9 +122,16 @@ const Carousel = ({ selected, setSelected }) => {
             />
           </div>
         ))} */}
-      </div>
-    </main>
+    </div>
   );
 };
 
-export default Carousel;
+const CarouselSection = ({ selected, setSelected }) => {
+  return (
+    <Section right>
+      <Carousel selected={selected} setSelected={setSelected} />
+    </Section>
+  );
+};
+
+export default CarouselSection;

@@ -218,11 +218,6 @@ export const Experience = (props) => {
       >
         <group>
           <group position={[25, -3, 24]}>
-            {/* <Portal
-              rotation={[0, -Math.PI / 2, 0]}
-              position={[1, 10, 2]}
-              selected={selected}
-            /> */}
             <Island scale={section === 2 ? 1.6 : 1} />
             <group position={[0, 10, 0]}>
               {IMAGES.map(({ position, id }) => (

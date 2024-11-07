@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@ant-design/icons": "^5.4.0",
-    "@formspree/react": "^2.4.2",
     "@react-three/drei": "9.83.8",
     "@react-three/fiber": "8.13.3",
     "@react-three/postprocessing": "^2.16.2",
