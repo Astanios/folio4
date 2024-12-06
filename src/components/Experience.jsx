@@ -155,7 +155,7 @@ export const Experience = (props) => {
   };
 
   const animateWhale = {
-    1: { scale: 0.8 },
+    1: { scale: 2.8, x: 0 },
     2: { y: -40, x: -60 },
   };
 
