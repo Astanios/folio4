@@ -8,17 +8,17 @@ import { DirectionalLightHelper } from "three";
 
 import { framerMotionConfig } from "../config";
 // import { Background } from "./Background";
-import { Projects } from "./Projects";
+// import { Projects } from "./Projects";
 import { Island } from "./Island2";
-import Portal from "./Portal2";
+// import Portal from "./Portal2";
 import Ocean from "./Ocean";
 import BlueWhale from "./BlueWhale";
-import Clouds from "./Clouds";
+// import Clouds from "./Clouds";
 import Fruit from "./Fruit";
 import Mountain from "./Mountain";
-import Sun from "./Sun";
+// import Sun from "./Sun";
 import { Postpro } from "./Postpro";
-import { Marsh } from "./Marsh";
+// import { Marsh } from "./Marsh";
 import { IMAGES } from "../utils/images";
 
 export const Experience = (props) => {
@@ -156,7 +156,7 @@ export const Experience = (props) => {
 
   const animateWhale = {
     1: { scale: 2.8, x: 0 },
-    2: { y: -40, x: -60 },
+    2: { y: -40, x: -60, rotateY: -Math.PI/4 },
   };
 
   return (

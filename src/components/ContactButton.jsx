@@ -23,7 +23,7 @@ const ContactButton = ({ text = "Hover me!", children, link = false }) => {
     >
       <AnimatePresence>
         <motion.div
-          className="cursor-pointer flex items-center justify-center rounded-3xl text-white p-1.5 bg-indigo-500 bg-opacity-30"
+          className="cursor-pointer flex items-center justify-center rounded-3xl text-white p-1.5 bg-indigo-500 bg-opacity-30 text-xl"
           initial={{ opacity: 0, scaleX: 0 }}
           animate={{ opacity: 1, scaleX: 1 }}
           exit={{ opacity: 0, scaleX: 0 }}

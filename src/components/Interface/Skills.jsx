@@ -7,11 +7,13 @@ import {
 import ContactButton from "../ContactButton";
 import Section from "./Section";
 
+const textShadow = { textShadow: '#fa5a0a 1px 0 10px'}
+
 const SkillsSection = () => {
   return (
     <Section>
       <motion.div
-        className="2xl:w-1/3 xl:w-1/3 lg:w-1/3 md:w-1/3 text-justify bg-indigo-500 bg-opacity-30 rounded-lg p-4 content-center"
+        className="2xl:w-1/3 xl:w-1/3 lg:w-1/3 md:w-1/3 text-justify"
         initial={{
           opacity: 0,
           y: 25,
@@ -27,13 +29,13 @@ const SkillsSection = () => {
       >
         {/* <h2 className="text-3xl md:text-5xl font-bold text-white">About me:</h2>
           <br />{" "} */}
-        <p className="whitespace-pre-wrap text-white text-xl">
+        <p className="whitespace-pre-wrap text-white text-2xl mb-4" style={textShadow}>
           <b>I'm a Software Engineer based in Madrid.</b> &#10;I'm passionate
           about data engineering, computer vision and beautiful interfaces.
         </p>
       </motion.div>
       <motion.div
-        className="2xl:w-1/3 xl:w-1/3 lg:w-1/3 md:w-1/3 text-justify bg-indigo-500 bg-opacity-30 rounded-lg p-4 mt-8 content-center"
+        className="2xl:w-1/3 xl:w-1/3 lg:w-1/3 md:w-1/3 text-justify "
         initial={{
           opacity: 0,
           y: 25,
@@ -47,7 +49,7 @@ const SkillsSection = () => {
           delay: 0.5,
         }}
       >
-        <p className="whitespace-pre-wrap text-white text-lg">
+        <p className="whitespace-pre-wrap text-white text-2xl" style={textShadow}>
           I started developing in 2016. Throughout the years I've built
           different platforms, services and interesting products overall.
           Nowadays I focus on building intuitive interfaces for our customers at
