@@ -142,3 +142,69 @@ main {
     }
   }
 }
+
+.quote-wrapper {
+  width: min(96vw, 88vh, 760px);
+  height: min(108vw, 96vh, 900px);
+  position: relative;
+  margin: 0 auto;
+  border-radius: 50% / 47%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.text {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  position: relative;
+  margin: 0;
+  color: white;
+  padding: 18% 10% 8%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  text-align: center;
+}
+
+.circle-copy {
+  margin: 0;
+  max-width: 98%;
+  color: #fff;
+  font-size: clamp(1.05rem, 0.95rem + 0.72vw, 1.65rem);
+  line-height: 1.16;
+  font-style: italic;
+  text-wrap: balance;
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000,
+    0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+@media (min-width: 850px) {
+  .quote-wrapper {
+    width: min(62vw, 88vh, 650px);
+    height: min(72vw, 96vh, 820px);
+  }
+}
+
+@media (max-width: 849px) {
+  .quote-wrapper {
+    width: min(94vw, 78vh, 560px);
+    height: min(118vw, 86vh, 760px);
+  }
+
+  .text {
+    padding: 20% 8% 9%;
+  }
+
+  .circle-copy {
+    max-width: 100%;
+    font-size: clamp(0.95rem, 0.92rem + 0.82vw, 1.22rem);
+    line-height: 1.14;
+  }
+}

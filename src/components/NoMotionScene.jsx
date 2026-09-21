@@ -12,7 +12,6 @@ import { Projects } from "./Projects";
 import { Island } from "./Island2";
 import Portal from "./Portal";
 import Ocean from "./Ocean";
-import BlueWhale from "./BlueWhale";
 import Clouds from "./Clouds";
 import Fruit from "./Fruit";
 import Mountain from "./Mountain";

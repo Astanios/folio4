@@ -8,36 +8,6 @@ import { useGLTF, Cloud } from "@react-three/drei";
 import { useControls } from "leva";
 export default function Mountain(props) {
   const { nodes, materials } = useGLTF("/models/mountain.glb");
-  // const { posX, posY, posZ } = useControls({
-  //   posX: {
-  //     value: 0,
-  //     min: -1000,
-  //     max: 1000,
-  //     step: 2,
-  //   },
-  //   posY: {
-  //     value: 0,
-  //     min: -1000,
-  //     max: 1000,
-  //     step: 2,
-  //   },
-  //   posZ: {
-  //     value: 0,
-  //     min: -1000,
-  //     max: 1000,
-  //     step: 2,
-  //   },
-  // scale: {
-  //   value: 0.15,
-  //   min: 0.001,
-  //   max: 10,
-  //   step: 0.005,
-  // },
-  // intensity: { min: 0, max: 10, value: 1, step: 0.5 },
-  // x: { min: -100, max: 100, value: 0, step: 1 },
-  // y: { min: -100, max: 100, value: -11, step: 1 },
-  // z: { min: -100, max: 100, value: -30, step: 1 },
-  // });
 
   return (
     <group {...props} dispose={null}>

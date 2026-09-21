@@ -64,7 +64,7 @@ function App() {
         />
         <Cursor />
       </MotionConfig>
-      <Leva hidden />
+      <Leva />
     </>
   );
 }

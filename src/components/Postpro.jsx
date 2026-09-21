@@ -33,8 +33,8 @@ export const Postpro = ({ section }) => {
   // const data = useLoader(LUTCubeLoader, "/cubicle.CUBE");
   // useFrame((state) => (water.current.time = state.clock.elapsedTime * 4));
   const animateSun = {
-    1: { scale: isMobile ? 2 : 2.5, y: -50 },
-    2: { scale: 1, y: -60 },
+    1: { scale: isMobile ? 2 : 2, y: -38 },
+    2: { scale: 1, x: 0, y: -29, z: 15 },
   };
   return (
     <>
@@ -50,12 +50,12 @@ export const Postpro = ({ section }) => {
 
       {sunRef.current && (
         <EffectComposer>
-          <DepthOfField
+          {/* <DepthOfField
             focusDistance={1}
             focalLength={0.5}
             bokehScale={2}
             height={720}
-          />
+          /> */}
           {/* <Noise opacity={0.025} /> */}
           <Vignette eskil={false} offset={0.1} darkness={1.2} />
           {/* <LUT lut={data.texture} /> */}

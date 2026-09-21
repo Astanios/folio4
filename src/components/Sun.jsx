@@ -2,7 +2,7 @@ import React, { forwardRef } from "react";
 import { GradientTexture } from "@react-three/drei";
 const Sun = forwardRef((props, ref) => {
   return (
-    <mesh ref={ref} scale={10} {...props}>
+    <mesh ref={ref} scale={15} {...props}>
       <sphereGeometry attach="geometry" />
       <meshBasicMaterial>
         <GradientTexture
