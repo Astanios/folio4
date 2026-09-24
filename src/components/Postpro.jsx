@@ -22,19 +22,30 @@ import {
 import { motion } from "framer-motion-3d";
 import { BlendFunction, Resizer, KernelSize, GlitchMode } from "postprocessing";
 import Sun from "./Sun";
+import { THOUGHT_FIELD_LAYOUT } from "./thoughtFieldLayout";
 
 extend({ WaterPass, UnrealBloomPass, FilmPass, LUTPass });
 
-export const Postpro = ({ section }) => {
+export const Postpro = ({ section, thoughtFieldLayout = THOUGHT_FIELD_LAYOUT }) => {
   const sunRef = useRef();
   const isMobile = window.innerWidth < 768;
+  const section2Fx = thoughtFieldLayout.effects;
 
   // const water = useRef();
   // const data = useLoader(LUTCubeLoader, "/cubicle.CUBE");
   // useFrame((state) => (water.current.time = state.clock.elapsedTime * 4));
+  const thoughtFieldSun = isMobile
+    ? thoughtFieldLayout.sun.mobile
+    : thoughtFieldLayout.sun.desktop;
   const animateSun = {
-    1: { scale: isMobile ? 2 : 2, y: -38 },
+    1: {
+      scale: thoughtFieldSun.scale,
+      x: thoughtFieldSun.x,
+      y: thoughtFieldSun.y,
+      z: thoughtFieldSun.z,
+    },
     2: { scale: 1, x: 0, y: -29, z: 15 },
+    3: { scale: 0.35, x: 0, y: -40, z: -20 },
   };
   return (
     <>
@@ -49,7 +60,7 @@ export const Postpro = ({ section }) => {
       </motion.group>
 
       {sunRef.current && (
-        <EffectComposer>
+        <EffectComposer multisampling={0}>
           {/* <DepthOfField
             focusDistance={1}
             focalLength={0.5}
@@ -57,7 +68,11 @@ export const Postpro = ({ section }) => {
             height={720}
           /> */}
           {/* <Noise opacity={0.025} /> */}
-          <Vignette eskil={false} offset={0.1} darkness={1.2} />
+          <Vignette
+            eskil={false}
+            offset={0.1}
+            darkness={section === 1 ? section2Fx.vignetteDarkness : 1.2}
+          />
           {/* <LUT lut={data.texture} /> */}
 
           {/* <Bloom
@@ -68,11 +83,11 @@ export const Postpro = ({ section }) => {
           <GodRays
             sun={sunRef.current}
             blendFunction={BlendFunction.Screen}
-            samples={40}
-            density={1}
-            decay={0.9}
-            weight={1}
-            exposure={0.1}
+            samples={section === 1 ? section2Fx.godRaysSamples : 40}
+            density={section === 1 ? section2Fx.godRaysDensity : 1}
+            decay={section === 1 ? section2Fx.godRaysDecay : 0.9}
+            weight={section === 1 ? section2Fx.godRaysWeight : 1}
+            exposure={section === 1 ? section2Fx.godRaysExposure : 0.1}
             clampMax={1}
             width={Resizer.AUTO_SIZE}
             height={Resizer.AUTO_SIZE}
@@ -80,8 +95,24 @@ export const Postpro = ({ section }) => {
           />
           <HueSaturation
             blendFunction={BlendFunction.NORMAL} // blend mode
-            hue={0.1} // hue in radians
-            saturation={0.7} // saturation in radians
+            hue={section === 1 ? section2Fx.hue : 0.1} // hue in radians
+            saturation={section === 1 ? section2Fx.saturation : 0.7} // saturation in radians
+          />
+          <Bloom
+            mipmapBlur
+            intensity={section === 1 ? section2Fx.bloom1Intensity : 0.45}
+            luminanceThreshold={0}
+            luminanceSmoothing={section === 1 ? section2Fx.bloom1Smoothing : 0.75}
+            radius={section === 1 ? section2Fx.bloom1Radius : undefined}
+            levels={section === 1 ? section2Fx.bloom1Levels : undefined}
+          />
+          <Bloom
+            mipmapBlur
+            intensity={section === 1 ? section2Fx.bloom2Intensity : 0}
+            luminanceThreshold={0}
+            luminanceSmoothing={section === 1 ? section2Fx.bloom2Smoothing : 1}
+            radius={section === 1 ? section2Fx.bloom2Radius : undefined}
+            levels={section === 1 ? section2Fx.bloom2Levels : undefined}
           />
         </EffectComposer>
       )}

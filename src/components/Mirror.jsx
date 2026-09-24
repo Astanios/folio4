@@ -138,4 +138,4 @@ export default function Mirror(props) {
   );
 }
 
-useGLTF.preload("/mirror.glb");
+useGLTF.preload("/models/mirror.glb");
