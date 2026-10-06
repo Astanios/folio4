@@ -8,6 +8,7 @@ import ThoughtFieldPlume from "./ThoughtFieldPlume";
 import ThoughtFieldIslands from "./ThoughtFieldIslands";
 import CompanyIslandScene from "./CompanyIslandScene";
 import { THOUGHT_FIELD_LAYOUT } from "./thoughtFieldLayout";
+import useThoughtFieldControls from "./useThoughtFieldControls";
 
 const ORB_BLOOM_COLOR = new THREE.Color(2.3, 1.8, 1.15);
 const PLUME_TILT_AXIS = new THREE.Vector3(0, 0, 1);
@@ -30,19 +31,61 @@ export default function ThoughtFieldScene({ section, thoughtFieldLayout: sourceL
   const [flowing, setFlowing] = useState(false);
   const { mouse, size } = useThree();
   const isMobile = size.width < 768;
-  const thoughtFieldLayout = useMemo(() => {
+  const isMedium = size.width >= 768 && size.width <= 1500;
+  const { handPosition, handScale, orbPosition, orbScale } = useThoughtFieldControls(sourceLayout, isMobile);
+  const responsiveLayout = useMemo(() => {
+    if (isMedium) {
+      const { popLead, travelScale } = sourceLayout.phrases.medium;
+      const originX = sourceLayout.orb.position[0] + sourceLayout.particles.positionX
+        + sourceLayout.particles.emissionOffsetX;
+      return {
+        ...sourceLayout,
+        particles: { ...sourceLayout.particles, bubbleCarrierFlight: sourceLayout.particles.bubbleCarrierFlight - popLead },
+        phrases: {
+          ...sourceLayout.phrases,
+          bubbleFirstDelay: sourceLayout.phrases.bubbleFirstDelay - popLead,
+          // Pop nearer the orb so rightward drift leaves more reading room.
+          bubbleTargets: sourceLayout.phrases.bubbleTargets.map(([x, y, z]) =>
+            [THREE.MathUtils.lerp(originX, x, travelScale), y, z]),
+        },
+      };
+    }
     if (!isMobile) return sourceLayout;
-    // Bring the foreground into the portrait viewport without moving the
-    // islands or the camera's later approach destination.
-    const shiftX = 3.7;
+    const orbPosition = sourceLayout.mobile.orb.position;
     return {
       ...sourceLayout,
-      hand: { ...sourceLayout.hand, position: [sourceLayout.hand.position[0] + shiftX, ...sourceLayout.hand.position.slice(1)] },
-      orb: { ...sourceLayout.orb, position: [sourceLayout.orb.position[0] + shiftX, ...sourceLayout.orb.position.slice(1)] },
-      particles: { ...sourceLayout.particles, positionX: 0 },
-      sparks: { ...sourceLayout.sparks, baseX: sourceLayout.sparks.baseX + shiftX },
+      hand: { ...sourceLayout.hand, ...sourceLayout.mobile.hand },
+      orb: { ...sourceLayout.orb, ...sourceLayout.mobile.orb },
+      plume: { ...sourceLayout.plume, ...sourceLayout.plume.mobile },
+      particles: {
+        ...sourceLayout.particles,
+        positionX: 0,
+        // Cancel the particle wrapper's depth so emission starts at the orb.
+        emissionOffsetZ: sourceLayout.particles.emissionOffsetZ - sourceLayout.particles.positionZ,
+        flowDirection: [0, 1],
+      },
+      phrases: {
+        ...sourceLayout.phrases,
+        bubbleDriftDirection: [0, 1],
+        bubbleHorizontalLanes: sourceLayout.phrases.bubbleHorizontalLanesMobile,
+      },
+      sparks: { ...sourceLayout.sparks, baseX: orbPosition[0], baseY: orbPosition[1], spreadYMobile: 2 },
     };
-  }, [isMobile, sourceLayout]);
+  }, [isMobile, isMedium, sourceLayout]);
+  const thoughtFieldLayout = useMemo(() => {
+    const orbOffset = orbPosition.map((value, index) => value - responsiveLayout.orb.position[index]);
+    return {
+      ...responsiveLayout,
+      hand: { ...responsiveLayout.hand, position: handPosition, scale: handScale },
+      orb: { ...responsiveLayout.orb, position: orbPosition, scale: orbScale },
+      sparks: {
+        ...responsiveLayout.sparks,
+        baseX: responsiveLayout.sparks.baseX + orbOffset[0],
+        baseY: responsiveLayout.sparks.baseY + orbOffset[1],
+        baseZ: responsiveLayout.sparks.baseZ + orbOffset[2],
+      },
+    };
+  }, [responsiveLayout, handPosition, handScale, orbPosition, orbScale]);
   const plumeTargetQuat = useMemo(() => new THREE.Quaternion(), []);
   const plumeTiltQuat = useMemo(() => new THREE.Quaternion(), []);
   const worldSection = section === 3 ? 0 : 1;
@@ -108,13 +151,16 @@ export default function ThoughtFieldScene({ section, thoughtFieldLayout: sourceL
       const auraWidth =
         thoughtFieldLayout.orb.auraScale * thoughtFieldLayout.plume.length;
       const orbRadius = thoughtFieldLayout.orb.scale * 0.82 * orbPulse;
-      orbAuraRef.current.position.x +=
+      const plumeDistance =
         orbRadius +
         auraWidth * 0.5 +
-        pointerX * 0.06 +
         thoughtFieldLayout.plume.offsetX;
+      // Move the plume's center along its flow as well as rotating its wisps.
+      orbAuraRef.current.position.x +=
+        Math.cos(thoughtFieldLayout.plume.rotationZ) * plumeDistance + pointerX * 0.06;
       orbAuraRef.current.position.y +=
-        pointerY * 0.04 + thoughtFieldLayout.plume.offsetY;
+        Math.sin(thoughtFieldLayout.plume.rotationZ) * plumeDistance
+        + pointerY * 0.04 + thoughtFieldLayout.plume.offsetY;
       orbAuraRef.current.position.z += thoughtFieldLayout.plume.offsetZ;
       plumeTiltQuat.setFromAxisAngle(
         PLUME_TILT_AXIS,

@@ -11,6 +11,16 @@ export const THOUGHT_FIELD_LAYOUT = {
   root: {
     activePosition: [0.05, 20.3, 0.1],
   },
+  mobile: {
+    hand: {
+      position: [-0.6, -19.4, -2.2],
+      scale: 1.75,
+    },
+    orb: {
+      position: [-0.6, -18.5, -2.3],
+      scale: 0.85,
+    },
+  },
   hand: {
     position: [-5.3, -18, -2.2],
     rotation: [1.1, -1.8, -1.5],
@@ -34,8 +44,16 @@ export const THOUGHT_FIELD_LAYOUT = {
     irregularity: 1.0,
     depth: 2.8,
     separation: 1.0,
+    spread: 0,
     density: 0.18,
     flowSpeed: 1.0,
+    mobile: {
+      offsetX: -0.55,
+      rotationZ: Math.PI / 2,
+      length: 4.8,
+      availableArea: 3.1,
+      spread: 1.2,
+    },
   },
   fillLight: {
     position: [1.8, 1.2, -1.6],
@@ -174,9 +192,16 @@ export const THOUGHT_FIELD_LAYOUT = {
     bubbleRevealDuration: 0.55,
     bubbleDrift: 0.55,
     bubbleDriftMobile: 0.26,
+    bubbleDriftDirection: [1, 0],
     bubbleMaxWidthDesktop: 3.1,
     bubbleMaxWidthMobile: 2.6,
     bubbleFontSizeMobile: 0.24,
+    bubbleHorizontalLanesMobile: [0.14, 0.85, 0.34, 0.72, 0.05, 0.55],
+    bubbleViewportPadding: 20,
+    medium: {
+      popLead: 1.5,
+      travelScale: 0.75,
+    },
     // Carrier destinations shared by each bubble and its emerging phrase.
     bubbleTargets: [
       [0.2, -14, -10.5],
@@ -187,15 +212,16 @@ export const THOUGHT_FIELD_LAYOUT = {
       [7, -19.2, -14],
     ],
     bubbleTargetsMobile: [
-      [-0.5, -13.5, -12],
-      [0.4, -17, -13],
-      [-0.5, -19, -12.5],
+      [-0.5, -14.5, -12],
+      [0.4, -15.5, -13],
+      [-0.5, -12.5, -12.5],
       [0.2, -13.5, -14],
-      [-0.4, -16.5, -13],
-      [0.3, -19, -14],
+      [-0.4, -15, -13],
+      [0.3, -11.8, -14],
     ],
   },
   particles: {
+    flowDirection: [1, 0],
     speedMultiplier: 0.1,
     baseX: -2.8,
     nearSpread: 0,

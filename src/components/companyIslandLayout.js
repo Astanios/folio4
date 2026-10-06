@@ -16,6 +16,20 @@ export const COMPANY_ISLAND_LAYOUT = {
   scrolls: [0, 0, 0],
   scrollsRotation: [0, 0, 0],
   scrollsScale: 0.115,
+  responsive: {
+    mobile: {
+      sceneOffset: [0, 0, 0],
+      islandOffset: [0, -0.12, 0],
+      mirrorOffset: [0, 0.08, 0],
+      scrollScaleOffset: 0.1,
+    },
+    medium: {
+      sceneOffset: [-0.07, 0, -0.5],
+      islandOffset: [0.1, -0.12, 0],
+      mirrorOffset: [0, 0.045, 0],
+      scrollScaleOffset: 0.05,
+    },
+  },
   satelliteMotion: FLOATING_ISLAND_MOTION.levitate,
   // The main platform and the three satellite islands, in normalized model space.
   scrollPlacements: [

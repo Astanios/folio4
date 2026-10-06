@@ -71,6 +71,7 @@ export default function ThoughtFieldSparks({
     const orbX = thoughtFieldLayout.orb.position[0];
     const orbY = thoughtFieldLayout.orb.position[1];
     const orbZ = thoughtFieldLayout.orb.position[2];
+    const [flowX, flowY] = thoughtFieldLayout.particles.flowDirection;
 
     if (pointerLightRef.current) {
       pointerLightRef.current.intensity = THREE.MathUtils.damp(
@@ -93,8 +94,7 @@ export default function ThoughtFieldSparks({
       t = spark.t += speed * (0.35 + active * 0.85);
       const cycle = (t * 0.12 + spark.offset) % 1;
       const drift = THREE.MathUtils.smoothstep(cycle, 0, 1);
-      const x =
-        thoughtFieldLayout.sparks.baseX +
+      const forward =
         drift * spark.travel +
         (mouse.x * 0.06) / Math.max(aspect, 0.001);
       const b = Math.sin(t) + Math.cos(t * 2) / 10;
@@ -102,12 +102,14 @@ export default function ThoughtFieldSparks({
       spark.mx += (mouse.x - spark.mx) * 0.02;
       spark.my += (mouse.y * -1 - spark.my) * 0.02;
 
-      dummy.position.set(
-        x,
+      const lateral =
         (spark.my / 10) * b +
-          yFactor +
-          Math.sin((t / 10) * factor) * 0.38 +
-          (Math.cos(t * 2) * factor) / 8.5,
+        yFactor - thoughtFieldLayout.sparks.baseY +
+        Math.sin((t / 10) * factor) * 0.38 +
+        (Math.cos(t * 2) * factor) / 8.5;
+      dummy.position.set(
+        thoughtFieldLayout.sparks.baseX + forward * flowX - lateral * flowY,
+        thoughtFieldLayout.sparks.baseY + forward * flowY + lateral * flowX,
         zFactor +
           Math.cos((t / 10) * factor) * 0.42 +
           (Math.sin(t * 3) * factor) / 8.2,

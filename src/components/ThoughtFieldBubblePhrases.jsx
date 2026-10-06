@@ -1,12 +1,13 @@
 import { Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import * as THREE from "three";
+import { confinePhrase } from "./thoughtFieldPhraseBounds";
 
 export const THOUGHT_PHRASES = [
   "I'm a developer/ programmer/ software engineer/ random guy in a basement with a computer.",
   "I just like making stuff",
-  "and this seemed safer than building rockets.",
+  "And this seemed safer than building rockets.",
   "I've stared into the abyss of a minified JavaScript file and felt the abyss stare back",
   `"Expert" is a strong word. I'm more of a "guy who has made all the mistakes."`,
   "I am proficient in Python, JavaScript and talking to rubber ducks.",
@@ -21,7 +22,13 @@ export default function ThoughtFieldBubblePhrases({
 }) {
   const groups = useRef([]);
   const texts = useRef([]);
-  useFrame(() => {
+  const boundsScratch = useMemo(() => ({
+    clipMatrix: new THREE.Matrix4(),
+    textMatrix: new THREE.Matrix4(),
+    corner: new THREE.Vector3(),
+    safeRange: new THREE.Vector2(),
+  }), []);
+  useFrame((state) => {
     groups.current.forEach((group, index) => {
       if (!group || !texts.current[index]) return;
       const event = bursts.current[index];
@@ -53,12 +60,17 @@ export default function ThoughtFieldBubblePhrases({
       const driftSpeed = isMobile
         ? settings.bubbleDriftMobile
         : settings.bubbleDrift;
-      group.position.x += revealAge * driftSpeed;
+      const [driftX, driftY] = settings.bubbleDriftDirection;
+      group.position.x += revealAge * driftSpeed * driftX;
       group.position.y +=
-        revealAge * 0.025 +
+        revealAge * (driftSpeed * driftY + 0.025) +
         (Math.sin(revealAge * 0.85 + index) - Math.sin(index)) * 0.1 * reveal;
       group.rotation.z = -0.025;
       group.scale.setScalar(settings.baseScale * (0.2 + 0.8 * reveal));
+      if (settings.bubbleHorizontalLanes) {
+        confinePhrase(group, texts.current[index], state.camera, state.size.width,
+          settings.bubbleViewportPadding, boundsScratch);
+      }
       // Each Text owns its derived material; fading one never fades another.
       const material = texts.current[index].material;
       const materials = Array.isArray(material) ? material : [material];

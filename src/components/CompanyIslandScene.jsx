@@ -11,7 +11,12 @@ import { COMPANY_EXHIBITS, COMPANY_ISLAND_LAYOUT, islandApproach } from "./compa
 const CompanyIslandScene = forwardRef(function CompanyIslandScene({ settings, section, reveal,
   layout = COMPANY_ISLAND_LAYOUT, onPortalReady }, ref) {
   const scroll = useScroll();
-  const isMobile = useThree((state) => state.size.width < 768);
+  const viewportSize = useThree((state) => state.size);
+  const width = viewportSize.width;
+  const isMobile = width < 768;
+  const responsive = isMobile ? layout.responsive.mobile : width <= 1500 ? layout.responsive.medium : null;
+  // Add depth on portrait tablets, whose horizontal field of view is narrower.
+  const depthMultiplier = isMobile ? 1 : Math.max(1, 1.5 * viewportSize.height / width);
   const descriptor = settings.placements.find((island) => island.id === "near-right");
   const position = isMobile ? descriptor.mobilePosition : descriptor.position;
   const size = descriptor.size * settings.scale * (isMobile ? settings.mobileScale : 1);
@@ -25,10 +30,13 @@ const CompanyIslandScene = forwardRef(function CompanyIslandScene({ settings, se
   const keyLight = useRef();
   const fillLight = useRef();
   const groupRef = useRef();
+  const compositionRef = useRef();
+  const islandRef = useRef();
   const focus = useRef(0);
   const selected = COMPANY_EXHIBITS.find((company) => company.id === selectedId) || null;
   const mirrorScale = layout.mirrorScale * (isMobile ? layout.mirrorMobileScaleMultiplier : 1);
-  // Keep the mirror readable on a narrow screen while its foot stays on the island.
+  const scrollScale = layout.scrollsScale + (responsive?.scrollScaleOffset ?? 0);
+  // Account for the larger mobile mirror before adding its responsive lift.
   const mirrorPosition = [layout.mirror[0], layout.mirror[1] + mirrorScale - layout.mirrorScale, layout.mirror[2]];
 
   useFrame((state, delta) => {
@@ -36,6 +44,18 @@ const CompanyIslandScene = forwardRef(function CompanyIslandScene({ settings, se
     const progress = islandApproach(scroll.offset);
     groupRef.current.visible = settings.visible && (!reveal || reveal.current > 0.001);
     focus.current = progress;
+    // Adjust the composition around the camera anchor as it approaches. The
+    // scrolls stay attached to their platforms when the island moves down.
+    compositionRef.current.position.fromArray(layout.groupPosition);
+    islandRef.current.position.set(0, 0, 0);
+    exhibit.current.position.set(0, 0, 0);
+    if (responsive) {
+      compositionRef.current.position.x += responsive.sceneOffset[0] * progress;
+      compositionRef.current.position.y += responsive.sceneOffset[1] * progress;
+      compositionRef.current.position.z += responsive.sceneOffset[2] * depthMultiplier * progress;
+      islandRef.current.position.fromArray(responsive.islandOffset).multiplyScalar(progress);
+      exhibit.current.position.fromArray(responsive.mirrorOffset).multiplyScalar(progress);
+    }
     const active = section === 1 && settings.visible && progress > 0.94;
     if (active !== readyRef.current) {
       const focused = scroll.el.ownerDocument.activeElement;
@@ -67,19 +87,21 @@ const CompanyIslandScene = forwardRef(function CompanyIslandScene({ settings, se
   return (
     <group ref={(node) => { groupRef.current = node; if (ref) ref.current = node; }}
       position={position} rotation={descriptor.rotation} scale={size} visible={settings.visible}>
-      <group position={layout.groupPosition} rotation={layout.groupRotation}>
-        <BackgroundIsland tint={settings.tint} haze={descriptor.haze * settings.haze} hazeColor={settings.hazeColor}
-          focus={focus} palette={ISLAND_ONE_PALETTE} reveal={reveal}
-          satelliteMotion={descriptor.satelliteMotion ?? settings.satelliteMotion}
-          focusedSatelliteMotion={layout.satelliteMotion} motionPhase={descriptor.phase}
-          renderPart={(islandPart) => (
-            <Suspense fallback={null}>
-              <CompanyScrolls companies={COMPANY_EXHIBITS} selectedId={selectedId} onSelect={toggleSelection}
-                active={ready} visible={section === 1} islandPart={islandPart}
-                position={layout.scrolls} rotation={layout.scrollsRotation}
-                placements={layout.scrollPlacements} scrollScale={layout.scrollsScale} />
-            </Suspense>
-          )} />
+      <group ref={compositionRef} position={layout.groupPosition} rotation={layout.groupRotation}>
+        <group ref={islandRef}>
+          <BackgroundIsland tint={settings.tint} haze={descriptor.haze * settings.haze} hazeColor={settings.hazeColor}
+            focus={focus} palette={ISLAND_ONE_PALETTE} reveal={reveal}
+            satelliteMotion={descriptor.satelliteMotion ?? settings.satelliteMotion}
+            focusedSatelliteMotion={layout.satelliteMotion} motionPhase={descriptor.phase}
+            renderPart={(islandPart) => (
+              <Suspense fallback={null}>
+                <CompanyScrolls companies={COMPANY_EXHIBITS} selectedId={selectedId} onSelect={toggleSelection}
+                  active={ready} visible={section === 1} islandPart={islandPart}
+                  position={layout.scrolls} rotation={layout.scrollsRotation}
+                  placements={layout.scrollPlacements} scrollScale={scrollScale} />
+              </Suspense>
+            )} />
+        </group>
         <group ref={exhibit}>
           <pointLight ref={keyLight} position={[0, 0.68, 0.52]} color="#ffdf9a" intensity={0} distance={size * 2} decay={2} />
           <pointLight ref={fillLight} position={[0.42, 0.52, 0.25]} color="#b8bdff" intensity={0} distance={size * 2} decay={2} />

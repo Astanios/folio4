@@ -8,7 +8,6 @@ export const IMAGES = [
     mediaSrc: "/pages/genasys.mp4",
     mediaType: "video",
     id: 4,
-
   },
   {
     title: "Riverside FM",
@@ -19,17 +18,15 @@ export const IMAGES = [
     mediaSrc: "/pages/riverside.mp4",
     mediaType: "video",
     id: 0,
-
   },
   {
-    title: "Videate",
-    url: "https://videate.io",
-    description: "Automates how-to video production",
-    image: "projects/videate.png",
-    mediaSrc: "/pages/videate.mp4",
+    title: "Elena's web",
+    url: "https://www.elenarosillo.com",
+    description: "Wife's web",
+    image: "projects/sportsworld.png",
+    mediaSrc: "/pages/elena.mp4",
     mediaType: "video",
     id: 1,
-
   },
   {
     title: "6Connex",
@@ -40,16 +37,14 @@ export const IMAGES = [
     mediaSrc: "/pages/6connex.mp4",
     mediaType: "video",
     id: 2,
-
   },
   {
-    title: "Elena's web",
-    url: "https://www.elenarosillo.com",
-    description: "Wife's web",
-    image: "projects/sportsworld.png",
-    mediaSrc: "/pages/elena.mp4",
+    title: "Videate",
+    url: "https://videate.io",
+    description: "Automates how-to video production",
+    image: "projects/videate.png",
+    mediaSrc: "/pages/videate.mp4",
     mediaType: "video",
     id: 3,
-
   },
 ];

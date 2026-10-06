@@ -2,6 +2,7 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import BubbleShellMaterial from "./BubbleShellMaterial";
+import { horizontalRange } from "./thoughtFieldPhraseBounds";
 import ThoughtFieldBubblePhrases, {
   THOUGHT_PHRASES,
 } from "./ThoughtFieldBubblePhrases";
@@ -24,6 +25,7 @@ function samplePosition(
 ) {
   const drift = 1 - Math.pow(1 - cycle, 2);
   const p = layout.particles;
+  const [flowX, flowY] = p.flowDirection;
   const progress = THREE.MathUtils.clamp(cycle / popStart, 0, 1);
   const envelope = Math.sin(Math.PI * progress);
   const hero = particle.index < THOUGHT_PHRASES.length;
@@ -56,20 +58,20 @@ function samplePosition(
     3 * inverse ** 2 * progress * control1 +
     3 * inverse * progress ** 2 * control2 +
     progress ** 3 * endZ;
+  const forward =
+    drift * particle.travel * depthSpread +
+    pointer.x * 0.45 * 0.12 * drift;
+  const lateral =
+    particle.spreadY * 1.25 * drift * depthSpread +
+    envelope * Math.sin(progress * Math.PI * 2 + particle.index) * 0.35 +
+    Math.sin(time * (particle.wobble + 0.3) + particle.index * 0.4) *
+      0.11 *
+      drift *
+      p.wobbleScale +
+    pointer.y * 0.24 * 0.12 * drift;
   target.set(
-    layout.orb.position[0] +
-      p.emissionOffsetX +
-      drift * particle.travel * depthSpread +
-      pointer.x * 0.45 * 0.12 * drift,
-    layout.orb.position[1] +
-      p.emissionOffsetY +
-      particle.spreadY * 1.25 * drift * depthSpread +
-      envelope * Math.sin(progress * Math.PI * 2 + particle.index) * 0.35 +
-      Math.sin(time * (particle.wobble + 0.3) + particle.index * 0.4) *
-        0.11 *
-        drift *
-        p.wobbleScale +
-      pointer.y * 0.24 * 0.12 * drift,
+    layout.orb.position[0] + p.emissionOffsetX + forward * flowX - lateral * flowY,
+    layout.orb.position[1] + p.emissionOffsetY + forward * flowY + lateral * flowX,
     hero
       ? startZ +
           particle.spreadZ * 1.3 * drift +
@@ -97,9 +99,12 @@ export default function ThoughtFieldParticles({
   const elapsed = useRef(0);
   const wasActive = useRef(false);
   const previousInterval = useRef(null);
+  const previousFlight = useRef(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const position = useMemo(() => new THREE.Vector3(), []);
   const color = useMemo(() => new THREE.Color(), []);
+  const rootClip = useMemo(() => new THREE.Matrix4(), []);
+  const safeRange = useMemo(() => new THREE.Vector2(), []);
   const count = isMobile ? 42 : 66;
   const heroCount = THOUGHT_PHRASES.length;
   const bursts = useRef(
@@ -181,9 +186,10 @@ export default function ThoughtFieldParticles({
     const interval = isMobile
       ? phrase.bubbleIntervalMobile
       : phrase.bubbleInterval;
-    // Restart the sequence when its cadence is tuned, so changing Leva cannot
-    // move an existing carrier past its pop point without a matching event.
-    if (!wasActive.current || previousInterval.current !== interval) {
+    // Restart when timing changes, including a responsive breakpoint crossing,
+    // so a carrier cannot skip its pop point without a matching phrase event.
+    if (!wasActive.current || previousInterval.current !== interval
+      || previousFlight.current !== p.bubbleCarrierFlight) {
       elapsed.current = 0;
       particles.forEach((particle) => {
         particle.lastCycle = null;
@@ -194,6 +200,7 @@ export default function ThoughtFieldParticles({
       });
       wasActive.current = true;
       previousInterval.current = interval;
+      previousFlight.current = p.bubbleCarrierFlight;
     }
     // Avoid missed bursts after a background tab resumes.
     elapsed.current += Math.min(delta, 0.05);
@@ -202,6 +209,11 @@ export default function ThoughtFieldParticles({
     const loopSeconds = heroCount * interval;
     const flightSeconds = p.bubbleCarrierFlight;
     groupRef.current.position.set(p.positionX, p.positionY, p.positionZ);
+    if (phrase.bubbleHorizontalLanes) {
+      groupRef.current.parent.updateWorldMatrix(true, false);
+      rootClip.multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse)
+        .multiply(groupRef.current.parent.matrixWorld);
+    }
     materialRef.current.uniforms.uTime.value = time;
     materialRef.current.uniforms.uOpacity.value = p.opacityScale * reveal;
 
@@ -219,19 +231,26 @@ export default function ThoughtFieldParticles({
         const target = (
           isMobile ? phrase.bubbleTargetsMobile : phrase.bubbleTargets
         )[index];
+        const [flowX, flowY] = p.flowDirection;
+        let popX = target[0];
+        if (phrase.bubbleHorizontalLanes) {
+          const edge = 1 - 2 * phrase.bubbleViewportPadding / state.size.width;
+          if (horizontalRange(safeRange, rootClip, target[1], target[2], edge)) {
+            // Reserve room for the fully revealed text before choosing a lane.
+            const halfWidth = phrase.bubbleMaxWidthMobile * phrase.baseScale * 0.5 + 0.15;
+            const left = safeRange.x + halfWidth;
+            const right = safeRange.y - halfWidth;
+            popX = left <= right
+              ? THREE.MathUtils.lerp(left, right, phrase.bubbleHorizontalLanes[index])
+              : (safeRange.x + safeRange.y) * 0.5;
+          }
+        }
+        const targetX = popX - p.positionX - layout.orb.position[0] - p.emissionOffsetX;
+        const targetY = target[1] - p.positionY - layout.orb.position[1] - p.emissionOffsetY;
         const driftAtPop = 1 - Math.pow(1 - popStart, 2);
-        particle.travel =
-          (target[0] -
-            p.positionX -
-            layout.orb.position[0] -
-            p.emissionOffsetX) /
-          driftAtPop;
-        particle.spreadY =
-          (target[1] -
-            p.positionY -
-            layout.orb.position[1] -
-            p.emissionOffsetY) /
-          (1.25 * driftAtPop);
+        // Resolve destinations in the flow's basis; mobile rises along Y.
+        particle.travel = (targetX * flowX + targetY * flowY) / driftAtPop;
+        particle.spreadY = (-targetX * flowY + targetY * flowX) / (1.25 * driftAtPop);
         particle.spreadZ =
           (target[2] -
             p.positionZ -

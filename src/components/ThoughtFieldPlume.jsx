@@ -18,6 +18,7 @@ const VERTEX_SHADER = `
   uniform float uDepth;
   uniform float uLane;
   uniform float uSeparation;
+  uniform float uSpread;
   uniform float uIrregularity;
   uniform vec2 uPointer;
 
@@ -25,10 +26,13 @@ const VERTEX_SHADER = `
     vUv = uv;
     vec3 p = position;
     // The source stays together; the ribbons peel apart downstream.
-    float spread = smoothstep(0.04, 0.85, uv.x);
+    float fan = clamp(uSpread, 0.0, 1.0);
+    float spread = mix(smoothstep(0.04, 0.85, uv.x),
+      smoothstep(0.02, 0.95, uv.x), fan);
     float curl = sin(uv.x * 7.0 - uTime * 0.32 + uSeed);
-    p.y += spread * (uLane * uSeparation * 0.18
-      + curl * 0.035 * uIrregularity);
+    float eddy = sin(uv.x * 13.0 + uTime * 0.19 + uSeed * 2.0);
+    p.y += spread * (uLane * uSeparation * mix(0.18, 0.35 * uSpread, fan)
+      + (curl * mix(0.035, 0.065, fan) + eddy * 0.035 * fan) * uIrregularity);
     p.z += uDepth * spread
       + sin(uv.x * 9.0 - uTime * 0.42 + uSeed) * spread * 0.22;
     p.xy += uPointer * uDepth * spread;
@@ -42,6 +46,7 @@ const FRAGMENT_SHADER = `
   uniform float uSeed;
   uniform float uOpacity;
   uniform float uIrregularity;
+  uniform float uSpread;
 
   float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
@@ -75,7 +80,12 @@ const FRAGMENT_SHADER = `
       + vec2(swirl * 2.4, -time * 0.3));
     float irregularity = min(uIrregularity, 4.0);
     float center = 0.5 + (swirl - 0.47) * (0.16 + irregularity * 0.13);
-    float width = mix(0.145, 0.025, smoothstep(0.05, 0.95, uv.x));
+    // Only the mobile profile opens into a broad cloud; larger widths keep
+    // the original taper and wisp movement.
+    float width = mix(
+      mix(0.145, 0.025, smoothstep(0.05, 0.95, uv.x)),
+      mix(0.065, 0.32, smoothstep(0.02, 0.85, uv.x)),
+      clamp(uSpread, 0.0, 1.0));
     width *= 0.65 + swirl * 0.9;
     float distanceToCenter = abs(uv.y - center);
     float body = 1.0 - smoothstep(width * 0.12, width, distanceToCenter);
@@ -105,6 +115,7 @@ function Wisp({ descriptor, settings, section, layerCount, reveal }) {
     uDepth: { value: 0 },
     uLane: { value: descriptor.lane },
     uSeparation: { value: settings.separation },
+    uSpread: { value: settings.spread },
     uIrregularity: { value: settings.irregularity },
     uOpacity: { value: 0 },
     uPointer: { value: new THREE.Vector2() },
@@ -116,6 +127,7 @@ function Wisp({ descriptor, settings, section, layerCount, reveal }) {
     u.uTime.value = state.clock.elapsedTime * settings.flowSpeed * descriptor.speed;
     u.uDepth.value = descriptor.depth * settings.depth;
     u.uSeparation.value = settings.separation;
+    u.uSpread.value = settings.spread;
     u.uIrregularity.value = settings.irregularity;
     u.uOpacity.value = settings.density * (reveal?.current ?? 1) * (5 / layerCount)
       * (descriptor.depth < 0 ? 0.8 : 1);
