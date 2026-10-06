@@ -1,4 +1,4 @@
-import React, { forwardRef } from "react";
+import { forwardRef } from "react";
 import { GradientTexture } from "@react-three/drei";
 import * as THREE from "three";
 

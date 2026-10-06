@@ -3,16 +3,15 @@ import { useEffect } from "react";
 
 export const LoadingScreen = (props) => {
   const { started, setStarted } = props;
-  const { progress, total, loaded, item } = useProgress();
+  const { progress } = useProgress();
 
   useEffect(() => {
-    console.log(progress, total, loaded, item);
     if (progress === 100) {
       setTimeout(() => {
         setStarted(true);
       }, 500);
     }
-  }, [progress, total, loaded, item]);
+  }, [progress, setStarted]);
 
   return (
     <div

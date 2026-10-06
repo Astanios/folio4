@@ -3,18 +3,10 @@ import { useScroll } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { BackgroundIsland } from "./Floating_island_1";
+import { ISLAND_ONE_PALETTE } from "./FloatingIslandBackgroundModel";
 import CompanyMirror from "./CompanyMirror";
 import CompanyScrolls from "./CompanyScrolls";
 import { COMPANY_EXHIBITS, COMPANY_ISLAND_LAYOUT, islandApproach } from "./companyIslandLayout";
-
-// Island 1 is exported without textures or colors. Keep the distant haze, then
-// reveal its foliage, bark and stone through inexpensive material colors.
-const ISLAND_PALETTE = {
-  "Material.001": "#91a68a",
-  "Material.004": "#725747",
-  "Material.002": "#7b8b62",
-  "Material.003": "#77717e",
-};
 
 const CompanyIslandScene = forwardRef(function CompanyIslandScene({ settings, section, reveal,
   layout = COMPANY_ISLAND_LAYOUT, onPortalReady }, ref) {
@@ -77,7 +69,7 @@ const CompanyIslandScene = forwardRef(function CompanyIslandScene({ settings, se
       position={position} rotation={descriptor.rotation} scale={size} visible={settings.visible}>
       <group position={layout.groupPosition} rotation={layout.groupRotation}>
         <BackgroundIsland tint={settings.tint} haze={descriptor.haze * settings.haze} hazeColor={settings.hazeColor}
-          focus={focus} palette={ISLAND_PALETTE} reveal={reveal}
+          focus={focus} palette={ISLAND_ONE_PALETTE} reveal={reveal}
           satelliteMotion={descriptor.satelliteMotion ?? settings.satelliteMotion}
           focusedSatelliteMotion={layout.satelliteMotion} motionPhase={descriptor.phase}
           renderPart={(islandPart) => (

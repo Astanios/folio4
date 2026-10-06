@@ -9,7 +9,7 @@ export const THOUGHT_PHRASES = [
   "and this seemed safer than building rockets.",
   "I've stared into the abyss of a minified JavaScript file and felt the abyss stare back",
   `"Expert" is a strong word. I'm more of a "guy who has made all the mistakes."`,
-  "I'm very good at fixing things now because I've broken everything at least twice",
+  "I am proficient in Python, JavaScript and talking to rubber ducks.",
 ];
 
 export default function ThoughtFieldBubblePhrases({

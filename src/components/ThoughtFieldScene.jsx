@@ -148,7 +148,6 @@ export default function ThoughtFieldScene({ section, thoughtFieldLayout: sourceL
       );
     }
 
-
   });
 
   return (

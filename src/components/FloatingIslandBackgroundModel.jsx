@@ -4,6 +4,13 @@ import * as THREE from "three";
 import { getFloatingIslandParts } from "./floatingIslandParts";
 import { resolveIslandMotion, sampleIslandMotion } from "./floatingIslandMotion";
 
+export const ISLAND_ONE_PALETTE = {
+  "Material.001": "#91a68a",
+  "Material.004": "#725747",
+  "Material.002": "#7b8b62",
+  "Material.003": "#77717e",
+};
+
 function IslandPart({ part, index, motion, focusedMotion, motionBlend, motionPhase, batches, materials, children }) {
   const group = useRef();
   const time = useRef({ background: 0, focused: 0 });
@@ -48,22 +55,36 @@ function IslandPart({ part, index, motion, focusedMotion, motionBlend, motionPha
 // Pass false to stop motion. motionBlend (0..1, or a ref) eases toward
 // focusedSatelliteMotion. renderPart can attach content to each moving platform.
 export default function FloatingIslandBackgroundModel({
-  scene, satelliteRoots, tint, haze, hazeColor, focus, palette, reveal,
+  scene, satelliteRoots, tint, haze, hazeColor, focus, palette, basePalette, reveal,
   satelliteMotion, focusedSatelliteMotion, motionBlend = focus, motionPhase = 0, renderPart, ...props
 }) {
   const { parts, batches } = useMemo(() => getFloatingIslandParts(scene, satelliteRoots), [scene, satelliteRoots]);
   const motion = useMemo(() => resolveIslandMotion(satelliteMotion), [satelliteMotion]);
   const focusedMotion = useMemo(() => resolveIslandMotion(satelliteMotion === false ? false : focusedSatelliteMotion, "levitate"),
     [satelliteMotion, focusedSatelliteMotion]);
-  const focusColors = useMemo(() => batches.map(({ material }) => (
-    palette?.[material.name] ? new THREE.Color(palette[material.name]) : material.color.clone()
-  )), [batches, palette]);
-  const materials = useMemo(() => batches.map(({ material: source }) => {
+  // Match the linear albedo of GLTF color textures instead of leaving the
+  // untextured island white. Keep the authored close-up palette for the approach.
+  const baseColors = useMemo(() => batches.map(({ material }) => (
+    basePalette?.[material.name]
+      ? new THREE.Color(basePalette[material.name]).convertSRGBToLinear()
+      : material.color.clone()
+  )), [batches, basePalette]);
+  const focusColors = useMemo(() => batches.map(({ material }, index) => (
+    palette?.[material.name] ? new THREE.Color(palette[material.name]) : baseColors[index].clone()
+  )), [batches, palette, baseColors]);
+  const materials = useMemo(() => batches.map(({ material: source }, index) => {
     const material = source.clone();
-    material.color.multiply(new THREE.Color(tint));
+    material.color.copy(baseColors[index]).multiply(new THREE.Color(tint));
+    // A shared fill keeps the textured model from receiving less ambient glow.
     material.emissive.set(tint);
-    material.emissiveMap = material.map;
+    material.emissiveMap = null;
     material.emissiveIntensity = 0.12;
+    // Both models use the same diffuse response. Imported PBR maps otherwise
+    // multiply these settings and make the textured island much darker.
+    material.roughnessMap = null;
+    material.metalnessMap = null;
+    material.aoMap = null;
+    material.normalMap = null;
     material.roughness = 0.95;
     material.metalness = 0;
     if (reveal) material.transparent = true;
@@ -80,14 +101,14 @@ export default function FloatingIslandBackgroundModel({
     };
     material.customProgramCacheKey = () => "thought-field-island-haze-v1";
     return material;
-  }), [batches, tint, haze, hazeColor]);
+  }), [batches, baseColors, tint, haze, hazeColor, reveal]);
   const tintColor = useMemo(() => new THREE.Color(tint), [tint]);
 
   useFrame(() => {
     if (reveal) materials.forEach((material) => { material.opacity = reveal.current; });
     if (!focus) return;
     materials.forEach((material, index) => {
-      material.color.copy(batches[index].material.color).multiply(tintColor)
+      material.color.copy(baseColors[index]).multiply(tintColor)
         .lerp(focusColors[index], focus.current);
       const shader = material.userData.islandShader;
       if (shader) shader.uniforms.islandHaze.value = haze * (1 - focus.current);

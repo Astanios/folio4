@@ -8,9 +8,7 @@ export const IMAGES = [
     mediaSrc: "/pages/genasys.mp4",
     mediaType: "video",
     id: 4,
-    imageSrc:
-      "https://images.pexels.com/photos/1813157/pexels-photo-1813157.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=500",
-    position: [0.5, 0, -2.3],
+
   },
   {
     title: "Riverside FM",
@@ -21,9 +19,7 @@ export const IMAGES = [
     mediaSrc: "/pages/riverside.mp4",
     mediaType: "video",
     id: 0,
-    imageSrc:
-      "https://images.pexels.com/photos/210922/pexels-photo-210922.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
-    position: [0, 1.5, 0],
+
   },
   {
     title: "Videate",
@@ -33,9 +29,7 @@ export const IMAGES = [
     mediaSrc: "/pages/videate.mp4",
     mediaType: "video",
     id: 1,
-    imageSrc:
-      "https://images.pexels.com/photos/164758/pexels-photo-164758.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
-    position: [0.5, 1.3, 0.5],
+
   },
   {
     title: "6Connex",
@@ -46,9 +40,7 @@ export const IMAGES = [
     mediaSrc: "/pages/6connex.mp4",
     mediaType: "video",
     id: 2,
-    imageSrc:
-      "https://images.pexels.com/photos/3430143/pexels-photo-3430143.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=500",
-    position: [0.5, 0.8, -1],
+
   },
   {
     title: "Elena's web",
@@ -58,8 +50,6 @@ export const IMAGES = [
     mediaSrc: "/pages/elena.mp4",
     mediaType: "video",
     id: 3,
-    imageSrc:
-      "https://images.pexels.com/photos/2231756/pexels-photo-2231756.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=500",
-    position: [0.3, 1, -3],
+
   },
 ];

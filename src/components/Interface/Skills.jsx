@@ -20,8 +20,7 @@ const SkillsSection = () => {
           delay: 0.5,
         }}
       >
-        {/* <h2 className="text-3xl md:text-5xl font-bold text-white">About me:</h2>
-          <br />{" "} */}
+
         <CircleText>
           <>
             <p className="circle-copy">

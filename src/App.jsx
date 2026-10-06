@@ -1,8 +1,8 @@
-import { OrbitControls, Scroll, ScrollControls } from "@react-three/drei";
+import { Scroll, ScrollControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { MotionConfig } from "framer-motion";
 import { Leva } from "leva";
-import { Suspense, useEffect, useState, useRef } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Cursor } from "./components/Cursor";
 import { Experience } from "./components/Experience";
 import Interface from "./components/Interface";
@@ -11,13 +11,11 @@ import { Menu } from "./components/Menu";
 import { ScrollManager } from "./components/ScrollManager";
 import SceneScroll from "./components/SceneScroll";
 import { framerMotionConfig, sceneCameraConfig } from "./config";
-import { Postpro } from "./components/Postpro";
-import Header from "./components/Header";
+
 function App() {
   const [section, setSection] = useState(0);
   const [started, setStarted] = useState(false);
   const [menuOpened, setMenuOpened] = useState(false);
-  const [selected, setSelected] = useState(0);
   useEffect(() => {
     setMenuOpened(false);
   }, [section]);
@@ -36,24 +34,11 @@ function App() {
             <ScrollManager section={section} onSectionChange={setSection} />
             <SceneScroll>
               <Suspense>
-                {started && (
-                  <Experience
-                    section={section}
-                    menuOpened={menuOpened}
-                    setSelected={setSelected}
-                    selected={selected}
-                  />
-                )}
+                {started && <Experience menuOpened={menuOpened} />}
               </Suspense>
             </SceneScroll>
             <Scroll html>
-              {started && (
-                <Interface
-                  setSection={setSection}
-                  selected={selected}
-                  setSelected={setSelected}
-                />
-              )}
+              {started && <Interface />}
             </Scroll>
           </ScrollControls>
         </Canvas>

@@ -1,5 +1,4 @@
 import { FLOATING_ISLAND_MOTION } from "./floatingIslandMotion";
-
 export const THOUGHT_FIELD_LAYOUT = {
   camera: {
     positionOffsetX: 0.05,
@@ -9,24 +8,8 @@ export const THOUGHT_FIELD_LAYOUT = {
     lookAtY: 12.25,
     lookAtZ: 0.15,
   },
-  sun: {
-    desktop: {
-      scale: 2,
-      x: -6.6,
-      y: -15.7,
-      z: -7.2,
-    },
-    mobile: {
-      scale: 0.12,
-      x: -5.8,
-      y: 0.95,
-      z: -18,
-    },
-  },
   root: {
     activePosition: [0.05, 20.3, 0.1],
-    hiddenPosition: [-60, -40, -120],
-    hiddenScale: 0.001,
   },
   hand: {
     position: [-5.3, -18, -2.2],
@@ -36,7 +19,6 @@ export const THOUGHT_FIELD_LAYOUT = {
   orb: {
     position: [-4.3, -15.7, -2.3],
     scale: 1.3,
-    glowScale: 2.05,
     auraScale: 1.93,
     lightPosition: [-2.12, 0.48, 0.6],
     lightDistance: 10,
@@ -153,37 +135,12 @@ export const THOUGHT_FIELD_LAYOUT = {
       },
     ],
   },
-  horizon: {
-    visible: true,
-    height: -108,
-    distance: 360,
-    width: 1800,
-    waterDepth: 520,
-    hazeHeight: 90,
-    hazeOpacity: 0.38,
-    waterOpacity: 0.92,
-    waterColor: "#080919",
-    color: "#353657",
-    ripples: 0.22,
-    flowSpeed: 0.18,
-  },
-  section2Mountain: {
-    position: [32.7, -80, -79],
-    rotation: [-0.4, -1.8, -0.1],
-    scaleMultiplier: 1,
-    color: "#17143b",
-    opacity: 0.55,
-    parallaxX: 0.08,
-    parallaxY: 0.05,
-    drift: 0.03,
-  },
   section2MountainLight: {
     intensity: 2.12,
     position: [-13, 10, 0],
     color: "#ff8600",
   },
   effects: {
-    vignetteDarkness: 0.63,
     godRaysEnabled: false,
     godRaysSamples: 20,
     godRaysDensity: 0.18,
@@ -203,24 +160,11 @@ export const THOUGHT_FIELD_LAYOUT = {
     bloom2Levels: 7,
   },
   phrases: {
-    speed: 0.035,
     spreadDesktop: 16.5,
     spreadMobile: 14.5,
-    baseX: -6.6,
-    baseY: -13.5,
-    laneGapDesktop: 2.43,
-    laneGapMobile: 1.75,
-    baseZ: -11,
-    zStep: 0,
-    visibleCycleStart: 0,
-    visibleCycleEnd: 1,
     visibleCount: 6,
     baseScale: 1.42,
-    readableScaleBoost: 0.15,
     fontSizeDesktop: 0.31,
-    fontSizeMobile: 0.5,
-    maxWidthDesktop: 1.36,
-    maxWidthMobile: 2.58,
     bubbleInterval: 3.6,
     bubbleIntervalMobile: 4.8,
     bubbleFirstDelay: 2.4,
@@ -233,8 +177,7 @@ export const THOUGHT_FIELD_LAYOUT = {
     bubbleMaxWidthDesktop: 3.1,
     bubbleMaxWidthMobile: 2.6,
     bubbleFontSizeMobile: 0.24,
-    // Pop destinations in section-root coordinates. The bubble and its phrase
-    // share the actual captured burst position, including its small wobble.
+    // Carrier destinations shared by each bubble and its emerging phrase.
     bubbleTargets: [
       [0.2, -14, -10.5],
       [7.8, -17.5, -12],
@@ -251,17 +194,6 @@ export const THOUGHT_FIELD_LAYOUT = {
       [-0.4, -16.5, -13],
       [0.3, -19, -14],
     ],
-  },
-  glyphs: {
-    speed: 0.06,
-    baseX: -2.8,
-    spreadDesktop: 9.4,
-    spreadMobile: 3.2,
-    baseY: -16,
-    zScale: -1,
-    visibleStart: 0.08,
-    baseScale: 1.44,
-    scaleBoost: 0.12,
   },
   particles: {
     speedMultiplier: 0.1,

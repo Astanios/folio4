@@ -3,7 +3,6 @@ import { useFrame } from "@react-three/fiber";
 import { animate, useMotionValue } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-// import { DirectionalLightHelper } from "three";
 
 import { framerMotionConfig, section1Lighting, sceneCameraConfig } from "../config";
 import Ocean from "./Ocean";
@@ -118,15 +117,14 @@ export const Experience = (props) => {
 
   return (
     <>
-      {/* <Background /> */}
-      {/* <Environment preset="dawn" background blur={0.6} /> */}
+
       <directionalLight ref={lightRef}
         intensity={section === 0 ? section1Lighting.intensity : section === 2 ? 0.85 : THOUGHT_FIELD_LAYOUT.section2MountainLight.intensity}
         position={section === 0 ? section1Lighting.position : section === 2 ? [-10, 20, 20] : THOUGHT_FIELD_LAYOUT.section2MountainLight.position}
         color={section === 0 ? section1Lighting.color : section === 2 ? "#fff0d4" : THOUGHT_FIELD_LAYOUT.section2MountainLight.color}
       />
       <ambientLight ref={ambientRef} intensity={section === 0 ? section1Lighting.ambientIntensity : section === 2 ? 0.32 : 0.1} />
-      {/* <Stars radius={0.001} depth={300} count={1000} /> */}
+
       <Postpro section={section} sun={openingSun} companyPortal={companyPortal}
         thoughtFieldLayout={thoughtFieldLayout} />
       <ThoughtFieldScene

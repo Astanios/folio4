@@ -2,7 +2,6 @@ import { useRef, useMemo } from "react";
 import { extend, useThree, useLoader, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { Water } from "three-stdlib";
-import { MeshStandardMaterial } from "three";
 
 extend({ Water });
 
