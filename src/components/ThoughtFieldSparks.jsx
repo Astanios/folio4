@@ -1,18 +1,22 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import useSceneViewport from "./useSceneViewport";
 
 const SPARK_COLORS = ["#fff8da", "#ffe27a", "#ffb86a", "#fff1b8", "#ffd2a8"];
+const SPARK_BLOOM_COLOR = new THREE.Color(2.2, 1.85, 1.25);
 
 export default function ThoughtFieldSparks({
   section,
   thoughtFieldLayout,
   mouse,
   isMobile,
+  emission,
 }) {
   const sparkMeshRef = useRef();
   const pointerLightRef = useRef();
-  const { viewport, size } = useThree();
+  const { size } = useThree();
+  const viewport = useSceneViewport();
   const aspect = size.width / viewport.width;
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const count = isMobile
@@ -63,7 +67,7 @@ export default function ThoughtFieldSparks({
   }, [sparks]);
 
   useFrame((state, delta) => {
-    const active = section === 1 ? 1 : 0;
+    const active = section === 1 ? (emission?.current ?? 1) : 0;
     const orbX = thoughtFieldLayout.orb.position[0];
     const orbY = thoughtFieldLayout.orb.position[1];
     const orbZ = thoughtFieldLayout.orb.position[2];
@@ -128,7 +132,12 @@ export default function ThoughtFieldSparks({
       />
       <instancedMesh ref={sparkMeshRef} args={[undefined, undefined, count]}>
         <dodecahedronGeometry args={[0.18, 0]} />
-        <meshBasicMaterial transparent opacity={0.92} toneMapped={false} />
+        <meshBasicMaterial
+          color={SPARK_BLOOM_COLOR}
+          transparent
+          opacity={0.92}
+          toneMapped={false}
+        />
       </instancedMesh>
     </>
   );

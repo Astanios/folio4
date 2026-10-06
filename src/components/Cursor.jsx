@@ -11,51 +11,33 @@ export const Cursor = () => {
   const cursorOutline = useRef();
   const [hoverButton, setHoverButton] = useState(false);
 
-  const animate = () => {
-    let distX = mouseX - outlineX;
-    let distY = mouseY - outlineY;
-
-    outlineX = outlineX + distX * CURSOR_SPEED;
-    outlineY = outlineY + distY * CURSOR_SPEED;
-
-    cursorOutline.current.style.left = `${outlineX}px`;
-    cursorOutline.current.style.top = `${outlineY}px`;
-    requestAnimationFrame(animate);
-  };
-
   useEffect(() => {
-    const mouseEventsListener = document.addEventListener(
-      "mousemove",
-      function (event) {
-        mouseX = event.pageX;
-        mouseY = event.pageY;
-      }
-    );
-    const animateEvent = requestAnimationFrame(animate);
+    let frame;
+    const animate = () => {
+      if (!cursorOutline.current) return;
+      outlineX += (mouseX - outlineX) * CURSOR_SPEED;
+      outlineY += (mouseY - outlineY) * CURSOR_SPEED;
+      cursorOutline.current.style.left = `${outlineX}px`;
+      cursorOutline.current.style.top = `${outlineY}px`;
+      frame = requestAnimationFrame(animate);
+    };
+    const mouseEventsListener = (event) => {
+      mouseX = event.pageX;
+      mouseY = event.pageY;
+    };
+    document.addEventListener("mousemove", mouseEventsListener);
+    frame = requestAnimationFrame(animate);
     return () => {
       document.removeEventListener("mousemove", mouseEventsListener);
-      cancelAnimationFrame(animateEvent);
+      cancelAnimationFrame(frame);
     };
   }, []);
 
   useEffect(() => {
-    const mouseEventListener = document.addEventListener(
-      "mouseover",
-      function (e) {
-        if (
-          e.target.tagName.toLowerCase() === "button" ||
-          // check parent is button
-          e.target.parentElement.tagName.toLowerCase() === "button" ||
-          // check is input or textarea
-          e.target.tagName.toLowerCase() === "input" ||
-          e.target.tagName.toLowerCase() === "textarea"
-        ) {
-          setHoverButton(true);
-        } else {
-          setHoverButton(false);
-        }
-      }
-    );
+    const mouseEventListener = (event) => {
+      setHoverButton(Boolean(event.target.closest?.("button, input, textarea")));
+    };
+    document.addEventListener("mouseover", mouseEventListener);
     return () => {
       document.removeEventListener("mouseover", mouseEventListener);
     };

@@ -9,9 +9,9 @@ import Interface from "./components/Interface";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { Menu } from "./components/Menu";
 import { ScrollManager } from "./components/ScrollManager";
-import { framerMotionConfig } from "./config";
+import SceneScroll from "./components/SceneScroll";
+import { framerMotionConfig, sceneCameraConfig } from "./config";
 import { Postpro } from "./components/Postpro";
-import { useControls } from "leva";
 import Header from "./components/Header";
 function App() {
   const [section, setSection] = useState(0);
@@ -30,11 +30,11 @@ function App() {
           ...framerMotionConfig,
         }}
       >
-        <Canvas shadows camera={{ position: [0, 3, 10], fov: 42 }}>
+        <Canvas shadows camera={sceneCameraConfig}>
           <color attach="background" args={["rgb(24, 4, 75)"]} />
           <ScrollControls pages={4} damping={0.1}>
             <ScrollManager section={section} onSectionChange={setSection} />
-            <Scroll>
+            <SceneScroll>
               <Suspense>
                 {started && (
                   <Experience
@@ -45,7 +45,7 @@ function App() {
                   />
                 )}
               </Suspense>
-            </Scroll>
+            </SceneScroll>
             <Scroll html>
               {started && (
                 <Interface
