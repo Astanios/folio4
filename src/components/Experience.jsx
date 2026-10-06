@@ -13,6 +13,7 @@ import ThoughtFieldScene from "./ThoughtFieldScene";
 import { THOUGHT_FIELD_LAYOUT } from "./thoughtFieldLayout";
 import { COMPANY_ISLAND_LAYOUT, islandApproach } from "./companyIslandLayout";
 import useSceneViewport from "./useSceneViewport";
+import SpaceBackground from "./SpaceBackground";
 
 export const Experience = (props) => {
   const { menuOpened } = props;
@@ -117,7 +118,7 @@ export const Experience = (props) => {
 
   return (
     <>
-
+      <SpaceBackground openingTransition={openingTransition} section={section} />
       <directionalLight ref={lightRef}
         intensity={section === 0 ? section1Lighting.intensity : section === 2 ? 0.85 : THOUGHT_FIELD_LAYOUT.section2MountainLight.intensity}
         position={section === 0 ? section1Lighting.position : section === 2 ? [-10, 20, 20] : THOUGHT_FIELD_LAYOUT.section2MountainLight.position}
