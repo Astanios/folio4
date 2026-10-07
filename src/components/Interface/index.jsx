@@ -1,5 +1,4 @@
 import AboutSection from "./About";
-import SkillsSection from "./Skills";
 import ThoughtFieldSection from "./ThoughtField";
 
 const Interface = () => {
@@ -8,7 +7,7 @@ const Interface = () => {
       <AboutSection />
       <ThoughtFieldSection />
       <section className="h-screen w-screen pointer-events-none" aria-label="Companies island" />
-      <SkillsSection />
+      <section className="h-screen w-screen pointer-events-none" aria-label="Contact island" />
     </div>
   );
 };

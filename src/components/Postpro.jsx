@@ -8,32 +8,75 @@ import {
 import { BlendFunction, Resizer, KernelSize } from "postprocessing";
 import { THOUGHT_FIELD_LAYOUT } from "./thoughtFieldLayout";
 import useCompanyPostproControls from "./useCompanyPostproControls";
+import { useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import { MathUtils } from "three";
 
 export const Postpro = ({
   section,
   sun,
   companyPortal,
+  contactProgress,
   thoughtFieldLayout = THOUGHT_FIELD_LAYOUT,
 }) => {
   const section2Fx = thoughtFieldLayout.effects;
   const section3Fx = useCompanyPostproControls();
+  const vignette = useRef();
+  const grading = useRef();
+  const bloom = useRef();
+  const bloom2 = useRef();
+  const rays = useRef();
   // Sections are zero-based: the mirror island is section 2 internally.
   const inCompanySection = section === 2;
+  const inContactSection = section === 3;
+  const contactFx = {
+    godRaysExposure: 0.085, godRaysWeight: 0.7,
+    bloom1Intensity: 0.7, bloom1Threshold: 0.48, bloom1Smoothing: 0.55,
+    bloom1Radius: 0.65, bloom1Levels: 5,
+  };
   const value = (key, fallback) => inCompanySection ? section3Fx[key]
-    : section === 1 ? section2Fx[key] ?? fallback : fallback;
+    : section === 1 ? section2Fx[key] ?? fallback
+      : inContactSection ? contactFx[key] ?? fallback : fallback;
   const lightSource = inCompanySection ? companyPortal : sun;
   const raysEnabled = value("godRaysEnabled", true);
   const bloomThreshold = section === 1 ? section2Fx.bloomThreshold : 0;
 
+  useFrame(() => {
+    if (section < 2) return;
+    const t = contactProgress?.current ?? 0;
+    const blend = (from, to) => MathUtils.lerp(from, to, t);
+    if (vignette.current) {
+      vignette.current.offset = blend(section3Fx.vignetteOffset, 0.1);
+      vignette.current.darkness = blend(section3Fx.vignetteDarkness, 1.08);
+    }
+    if (grading.current) {
+      grading.current.hue = blend(section3Fx.hue, 0);
+      grading.current.saturation = blend(section3Fx.saturation, 0.08);
+    }
+    if (bloom.current) {
+      bloom.current.intensity = blend(section3Fx.bloom1Intensity, contactFx.bloom1Intensity);
+      bloom.current.luminanceMaterial.threshold = blend(section3Fx.bloom1Threshold, contactFx.bloom1Threshold);
+      bloom.current.luminanceMaterial.smoothing = blend(section3Fx.bloom1Smoothing, contactFx.bloom1Smoothing);
+    }
+    if (bloom2.current) bloom2.current.intensity = blend(section3Fx.bloom2Intensity, 0);
+    if (rays.current) {
+      // Dim the portal rays before changing the source, then reveal the sunset.
+      rays.current.godRaysMaterial.exposure = inCompanySection
+        ? section3Fx.godRaysExposure * (1 - MathUtils.smoothstep(t, 0, 0.11))
+        : contactFx.godRaysExposure * MathUtils.smoothstep(t, 0.13, 0.7);
+    }
+  });
+
   return (
     <EffectComposer multisampling={0} enabled={!inCompanySection || section3Fx.enabled}>
       {(!inCompanySection || section3Fx.vignetteEnabled) && (
-        <Vignette eskil={false}
+        <Vignette ref={vignette} eskil={false}
           offset={inCompanySection ? section3Fx.vignetteOffset : 0.1}
-          darkness={inCompanySection ? section3Fx.vignetteDarkness : 1} />
+          darkness={inCompanySection ? section3Fx.vignetteDarkness : inContactSection ? 1.08 : 1} />
       )}
       {lightSource && raysEnabled && (
         <GodRays
+          ref={rays}
           sun={lightSource}
           blendFunction={BlendFunction.SCREEN}
           samples={value("godRaysSamples", 40)}
@@ -49,12 +92,13 @@ export const Postpro = ({
       )}
       {section !== 1 && (!inCompanySection || section3Fx.colorEnabled) && (
         <HueSaturation
+          ref={grading}
           blendFunction={BlendFunction.NORMAL}
-          hue={inCompanySection ? section3Fx.hue : 0.1}
-          saturation={inCompanySection ? section3Fx.saturation : 0.7}
+          hue={inCompanySection ? section3Fx.hue : inContactSection ? 0 : 0.1}
+          saturation={inCompanySection ? section3Fx.saturation : inContactSection ? 0.08 : 0.7}
         />
       )}
-      {(!inCompanySection || section3Fx.bloom1Enabled) && <Bloom
+      {(!inCompanySection || section3Fx.bloom1Enabled) && <Bloom ref={bloom}
         mipmapBlur
         intensity={value("bloom1Intensity", 0.45)}
         luminanceThreshold={value("bloom1Threshold", bloomThreshold)}
@@ -62,7 +106,7 @@ export const Postpro = ({
         radius={value("bloom1Radius")}
         levels={value("bloom1Levels")}
       />}
-      {(!inCompanySection || section3Fx.bloom2Enabled) && <Bloom
+      {(!inCompanySection || section3Fx.bloom2Enabled) && <Bloom ref={bloom2}
         mipmapBlur
         intensity={value("bloom2Intensity", 0)}
         luminanceThreshold={value("bloom2Threshold", bloomThreshold)}

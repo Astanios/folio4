@@ -1,4 +1,5 @@
 import { useScroll } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
 import { gsap } from "gsap";
 import { useEffect, useRef } from "react";
 
@@ -27,6 +28,19 @@ export const ScrollManager = ({ section, onSectionChange }) => {
   onChange.current = onSectionChange;
   currentSection.current = section;
 
+  useFrame(() => {
+    // Drei 9's scroll listener captures the scroll range and skips its first
+    // event after a resize. Browser clamping can therefore leave its target at
+    // an old ratio even when the DOM is already at the correct section anchor.
+    // Reconcile the raw target before Drei damps it; keep the animated offset
+    // under Drei's control so normal section travel keeps its existing timing.
+    const range = data.horizontal
+      ? data.el.scrollWidth - data.el.clientWidth
+      : data.el.scrollHeight - data.el.clientHeight;
+    const top = data.horizontal ? data.el.scrollLeft : data.el.scrollTop;
+    data.scroll.current = range > 0 ? Math.max(0, Math.min(1, top / range)) : 0;
+  }, -1);
+
   useEffect(() => {
     const el = data.el;
     data.fill.classList.add("top-0", "absolute");
@@ -52,8 +66,8 @@ export const ScrollManager = ({ section, onSectionChange }) => {
       const page = top / el.clientHeight;
       const anchor = Math.round(page);
       if (Math.abs(page - anchor) > ANCHOR_TOLERANCE) return null;
-      if (direction > 0 && (anchor === 0 || anchor === 1)) return anchor + 1;
-      if (direction < 0 && (anchor === 1 || anchor === 2)) return anchor - 1;
+      if (direction > 0 && anchor >= 0 && anchor < data.pages - 1) return anchor + 1;
+      if (direction < 0 && anchor > 0 && anchor < data.pages) return anchor - 1;
       return null;
     };
 
@@ -73,7 +87,8 @@ export const ScrollManager = ({ section, onSectionChange }) => {
       locked = true;
       targetSection = clamped;
       tween = gsap.to(el, {
-        duration: currentSection.current <= 1 && clamped <= 1 ? 1.6 : 1,
+        duration: currentSection.current === 3 || clamped === 3 ? 4.6
+          : currentSection.current <= 1 && clamped <= 1 ? 1.6 : 1,
         scrollTop: clamped * el.clientHeight,
         overwrite: "auto",
         onUpdate: () => { previousTop = el.scrollTop; },
@@ -88,6 +103,24 @@ export const ScrollManager = ({ section, onSectionChange }) => {
       if (notify) onChange.current(clamped);
     };
     manager.current = { moveTo };
+    let previousHeight = el.clientHeight;
+    const resizeObserver = new ResizeObserver(() => {
+      const height = el.clientHeight;
+      if (!height || height === previousHeight) return;
+      const page = previousHeight ? previousTop / previousHeight : currentSection.current;
+      previousHeight = height;
+      if (tween) {
+        const destination = targetSection;
+        tween.kill();
+        tween = null;
+        moveTo(destination);
+      } else if (Math.abs(page - Math.round(page)) < ANCHOR_TOLERANCE) {
+        // Keep a settled section at its anchor across orientation/height changes.
+        el.scrollTop = Math.round(page) * height;
+        previousTop = el.scrollTop;
+      }
+    });
+    resizeObserver.observe(el);
 
     const onWheel = (event) => {
       if (event.ctrlKey || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
@@ -159,6 +192,9 @@ export const ScrollManager = ({ section, onSectionChange }) => {
     const onBlur = () => { touch = null; key = null; release(); };
 
     const onScroll = () => {
+      // A shorter viewport can clamp scrollTop before ResizeObserver fires.
+      // Preserve the old anchor until the resize callback has remapped it.
+      if (el.clientHeight !== previousHeight) return;
       const previous = previousTop;
       previousTop = el.scrollTop;
       if (tween) return;
@@ -167,8 +203,7 @@ export const ScrollManager = ({ section, onSectionChange }) => {
         previousTop = el.scrollTop;
         return;
       }
-      // Keep menu navigation usable after native travel to Contact, without
-      // turning that travel into another automatic snap.
+      // Keep the menu in sync when dragging the scrollbar into Contact.
       if (el.clientHeight && el.scrollTop / el.clientHeight >= 2.5
         && currentSection.current !== 3) {
         currentSection.current = 3;
@@ -195,6 +230,7 @@ export const ScrollManager = ({ section, onSectionChange }) => {
     window.addEventListener("blur", onBlur);
     return () => {
       manager.current = null;
+      resizeObserver.disconnect();
       tween?.kill();
       clearTimeout(timer);
       el.removeEventListener("wheel", onWheel);

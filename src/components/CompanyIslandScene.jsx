@@ -56,7 +56,7 @@ const CompanyIslandScene = forwardRef(function CompanyIslandScene({ settings, se
       islandRef.current.position.fromArray(responsive.islandOffset).multiplyScalar(progress);
       exhibit.current.position.fromArray(responsive.mirrorOffset).multiplyScalar(progress);
     }
-    const active = section === 1 && settings.visible && progress > 0.94;
+    const active = section === 1 && settings.visible && progress > 0.94 && scroll.offset < 0.69;
     if (active !== readyRef.current) {
       const focused = scroll.el.ownerDocument.activeElement;
       if (!active && focused?.closest?.("[data-company-scroll], [data-mirror-state]")) {

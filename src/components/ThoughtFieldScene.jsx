@@ -16,7 +16,7 @@ const HAND_ENTRANCE_SECONDS = 0.65;
 const PARTICLE_DELAY_SECONDS = 0.5;
 
 export default function ThoughtFieldScene({ section, thoughtFieldLayout: sourceLayout = THOUGHT_FIELD_LAYOUT,
-  companyIslandRef, companyIslandLayout, openingTransition, onPortalReady }) {
+  companyIslandRef, companyIslandLayout, openingTransition, onPortalReady, contactProgress }) {
   const rootRef = useRef();
   const foregroundRef = useRef();
   const orbRef = useRef();
@@ -92,7 +92,8 @@ export default function ThoughtFieldScene({ section, thoughtFieldLayout: sourceL
 
   useFrame((state, delta) => {
     const progress = openingTransition.current.progress;
-    const inWorld = section !== 3;
+    const departure = contactProgress?.current ?? 0;
+    const inWorld = section !== 3 && departure < 0.98;
     rootRef.current.visible = inWorld;
     backgroundReveal.current = THREE.MathUtils.smoothstep(progress, 0.12, 0.68);
     // The islands arrive first. Start this clock only near the end of the ascent,

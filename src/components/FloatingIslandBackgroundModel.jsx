@@ -11,11 +11,14 @@ export const ISLAND_ONE_PALETTE = {
   "Material.003": "#77717e",
 };
 
-function IslandPart({ part, index, motion, focusedMotion, motionBlend, motionPhase, batches, materials, children }) {
+function IslandPart({ part, offset, index, motion, focusedMotion, motionBlend, motionPhase, batches, materials, children }) {
   const group = useRef();
   const time = useRef({ background: 0, focused: 0 });
   const scratch = useMemo(() => Array.from({ length: 4 }, () => new THREE.Vector3()), []);
   const inversePivot = useMemo(() => part.position.map((value) => -value), [part]);
+  const basePosition = useMemo(() => offset
+    ? part.position.map((value, axis) => value + (offset[axis] ?? 0))
+    : part.position, [part, offset]);
 
   useFrame((_, delta) => {
     if (part.id === "main" || !group.current) return;
@@ -32,16 +35,16 @@ function IslandPart({ part, index, motion, focusedMotion, motionBlend, motionPha
     const blend = THREE.MathUtils.clamp(typeof motionBlend === "number" ? motionBlend : motionBlend?.current ?? 0, 0, 1);
     position.lerp(focusedPosition, blend);
     rotation.lerp(focusedRotation, blend);
-    group.current.position.x = THREE.MathUtils.damp(group.current.position.x, part.position[0] + position.x, 8, dt);
-    group.current.position.y = THREE.MathUtils.damp(group.current.position.y, part.position[1] + position.y, 8, dt);
-    group.current.position.z = THREE.MathUtils.damp(group.current.position.z, part.position[2] + position.z, 8, dt);
+    group.current.position.x = THREE.MathUtils.damp(group.current.position.x, basePosition[0] + position.x, 8, dt);
+    group.current.position.y = THREE.MathUtils.damp(group.current.position.y, basePosition[1] + position.y, 8, dt);
+    group.current.position.z = THREE.MathUtils.damp(group.current.position.z, basePosition[2] + position.z, 8, dt);
     group.current.rotation.set(THREE.MathUtils.damp(group.current.rotation.x, rotation.x, 8, dt),
       THREE.MathUtils.damp(group.current.rotation.y, rotation.y, 8, dt),
       THREE.MathUtils.damp(group.current.rotation.z, rotation.z, 8, dt));
   });
 
   return (
-    <group ref={group} name={`floating-island-${part.id}`} position={part.position}>
+    <group ref={group} name={`floating-island-${part.id}`} position={basePosition}>
       {part.batchIndices.map((batchIndex) => (
         <mesh key={batchIndex} geometry={batches[batchIndex].geometry} material={materials[batchIndex]} />
       ))}
@@ -54,9 +57,10 @@ function IslandPart({ part, index, motion, focusedMotion, motionBlend, motionPha
 // satelliteMotion: { mode, speed, amplitude: [x,y,z], rotation: [x,y,z], phase }.
 // Pass false to stop motion. motionBlend (0..1, or a ref) eases toward
 // focusedSatelliteMotion. renderPart can attach content to each moving platform.
+// partOffsets adds local [x,y,z] offsets to individual authored platform pivots.
 export default function FloatingIslandBackgroundModel({
-  scene, satelliteRoots, tint, haze, hazeColor, focus, palette, basePalette, reveal,
-  satelliteMotion, focusedSatelliteMotion, motionBlend = focus, motionPhase = 0, renderPart, ...props
+  scene, satelliteRoots, tint, haze, hazeColor, focus, palette, basePalette, reveal, emissiveIntensity = 0.12,
+  satelliteMotion, focusedSatelliteMotion, motionBlend = focus, motionPhase = 0, renderPart, partOffsets, ...props
 }) {
   const { parts, batches } = useMemo(() => getFloatingIslandParts(scene, satelliteRoots), [scene, satelliteRoots]);
   const motion = useMemo(() => resolveIslandMotion(satelliteMotion), [satelliteMotion]);
@@ -78,7 +82,7 @@ export default function FloatingIslandBackgroundModel({
     // A shared fill keeps the textured model from receiving less ambient glow.
     material.emissive.set(tint);
     material.emissiveMap = null;
-    material.emissiveIntensity = 0.12;
+    material.emissiveIntensity = emissiveIntensity;
     // Both models use the same diffuse response. Imported PBR maps otherwise
     // multiply these settings and make the textured island much darker.
     material.roughnessMap = null;
@@ -101,7 +105,7 @@ export default function FloatingIslandBackgroundModel({
     };
     material.customProgramCacheKey = () => "thought-field-island-haze-v1";
     return material;
-  }), [batches, baseColors, tint, haze, hazeColor, reveal]);
+  }), [batches, baseColors, tint, haze, hazeColor, reveal, emissiveIntensity]);
   const tintColor = useMemo(() => new THREE.Color(tint), [tint]);
 
   useFrame(() => {
@@ -120,7 +124,7 @@ export default function FloatingIslandBackgroundModel({
   return (
     <group {...props} dispose={null}>
       {parts.map((part, index) => (
-        <IslandPart key={part.id} part={part} index={index} batches={batches} materials={materials}
+        <IslandPart key={part.id} part={part} offset={partOffsets?.[part.id]} index={index} batches={batches} materials={materials}
           motion={motion} focusedMotion={focusedMotion} motionBlend={motionBlend} motionPhase={motionPhase}>
           {renderPart?.(part.id)}
         </IslandPart>

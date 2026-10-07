@@ -1,5 +1,5 @@
 import { useScroll } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { animate, useMotionValue } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -14,6 +14,8 @@ import { THOUGHT_FIELD_LAYOUT } from "./thoughtFieldLayout";
 import { COMPANY_ISLAND_LAYOUT, islandApproach } from "./companyIslandLayout";
 import useSceneViewport from "./useSceneViewport";
 import SpaceBackground from "./SpaceBackground";
+import ContactScene from "./ContactScene";
+import { CONTACT_WORLD_Y, contactApproach, getContactLayout } from "./contactSceneLayout";
 
 export const Experience = (props) => {
   const { menuOpened } = props;
@@ -25,6 +27,12 @@ export const Experience = (props) => {
   const openingTransition = useRef({ progress: 0 });
   const [openingSun, setOpeningSun] = useState(null);
   const [companyPortal, setCompanyPortal] = useState(null);
+  const [contactSun, setContactSun] = useState(null);
+  const contactProgress = useRef(0);
+  const size = useThree((state) => state.size);
+  const contactLayout = getContactLayout(size.width, size.height);
+  const contactLightColor = useMemo(() => new THREE.Color("#eda3ba"), []);
+  const contactVector = useMemo(() => new THREE.Vector3(), []);
   const openingLightColor = useMemo(() => new THREE.Color(section1Lighting.color), []);
   const thoughtLightColor = useMemo(() => new THREE.Color(THOUGHT_FIELD_LAYOUT.section2MountainLight.color), []);
   const companyIslandRef = useRef();
@@ -35,7 +43,7 @@ export const Experience = (props) => {
   const smoothedLook = useMemo(() => new THREE.Vector3(), []);
   const companyIslandLayout = COMPANY_ISLAND_LAYOUT;
 
-  const isMobile = window.innerWidth < 768;
+  const isMobile = size.width < 768;
   const responsiveRatio = viewport.width / 12;
   const officeScaleRatio = Math.max(0.5, Math.min(0.9 * responsiveRatio, 0.9));
 
@@ -68,38 +76,39 @@ export const Experience = (props) => {
 
     const firstPage = THREE.MathUtils.clamp(data.offset * (data.pages - 1), 0, 1);
     const ascent = THREE.MathUtils.smoothstep(firstPage, 0, 1);
+    const arrival = contactApproach(data.offset);
+    contactProgress.current = arrival;
     openingTransition.current.progress = firstPage;
     if (openingRef.current) {
       // Cancel the page wrapper's lift, then send the entire opening below and
       // away from the camera. Each model keeps its original relative transform.
       openingRef.current.position.set(0,
         -viewport.height * (data.pages - 1) * data.offset - 90 * ascent, -32 * ascent);
-      if (section === 3) openingRef.current.position.set(0, 0, 0);
-      openingRef.current.visible = section === 3 || firstPage < 0.999;
+      openingRef.current.visible = firstPage < 0.999;
     }
 
-    const inIslandWorld = section !== 3;
     const camera = THOUGHT_FIELD_LAYOUT.camera;
     cameraTarget.set(cameraPositionX.get() + camera.positionOffsetX * ascent,
       THREE.MathUtils.lerp(sceneCameraConfig.position[1], camera.positionY, ascent),
       THREE.MathUtils.lerp(sceneCameraConfig.position[2], camera.positionZ, ascent));
     lookTarget.set(cameraLookAtX.get() + camera.lookAtOffsetX * ascent,
       camera.lookAtY * ascent, camera.lookAtZ * ascent);
-    if (!inIslandWorld) {
-      cameraTarget.set(cameraPositionX.get(), 3, 10);
-      lookTarget.set(cameraLookAtX.get(), 0, 0);
-    }
-    if (lightRef.current && section !== 2) {
+    if (section === 2 || arrival > 0) {
+      // Reset the base every frame so returning from Contact restores the
+      // company's lighting, independent of the direction of travel.
+      lightRef.current.intensity = 0.85;
+      lightRef.current.color.set("#fff0d4");
+      lightRef.current.position.set(-10, 20, 20);
+      ambientRef.current.intensity = 0.32;
+    } else {
       lightRef.current.intensity = THREE.MathUtils.lerp(section1Lighting.intensity,
         THOUGHT_FIELD_LAYOUT.section2MountainLight.intensity, ascent);
       lightRef.current.color.copy(openingLightColor).lerp(thoughtLightColor, ascent);
       lightRef.current.position.fromArray(section1Lighting.position).lerp(
         islandTarget.fromArray(THOUGHT_FIELD_LAYOUT.section2MountainLight.position), ascent);
-    }
-    if (ambientRef.current && section !== 2) {
       ambientRef.current.intensity = THREE.MathUtils.lerp(section1Lighting.ambientIntensity, 0.1, ascent);
     }
-    if (inIslandWorld && companyIslandRef.current) {
+    if (companyIslandRef.current) {
       const progress = islandApproach(data.offset);
       companyIslandRef.current.updateWorldMatrix(true, false);
       islandCamera.fromArray(isMobile ? companyIslandLayout.cameraMobile : companyIslandLayout.camera);
@@ -109,6 +118,28 @@ export const Experience = (props) => {
       islandCamera.x += cameraPositionX.get() * 0.25;
       cameraTarget.lerp(islandCamera, progress);
       lookTarget.lerp(islandTarget, progress);
+    }
+    if (arrival > 0) {
+      contactVector.fromArray(contactLayout.camera);
+      contactVector.y += CONTACT_WORLD_Y;
+      contactVector.x += cameraPositionX.get() * 0.4;
+      cameraTarget.lerp(contactVector, arrival);
+      // Back away from the portal before descending toward the water.
+      cameraTarget.z += Math.sin(arrival * Math.PI) * 42;
+      contactVector.fromArray(contactLayout.target);
+      contactVector.y += CONTACT_WORLD_Y;
+      contactVector.x += cameraLookAtX.get() * 0.4;
+      lookTarget.lerp(contactVector, arrival);
+      lightRef.current.color.lerp(contactLightColor, arrival);
+      lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0.55, arrival);
+      const pageLift = viewport.height * (data.pages - 1) * data.offset;
+      lightRef.current.position.lerp(contactVector.set(18, CONTACT_WORLD_Y + 22 - pageLift, -45), arrival);
+      lightRef.current.target.position.set(0, CONTACT_WORLD_Y * arrival, 0);
+      lightRef.current.target.updateMatrixWorld();
+      ambientRef.current.intensity = THREE.MathUtils.lerp(ambientRef.current.intensity, 0.07, arrival);
+    } else {
+      lightRef.current.target.position.set(0, 0, 0);
+      lightRef.current.target.updateMatrixWorld();
     }
     state.camera.position.lerp(cameraTarget, 1 - Math.exp(-5 * delta));
     smoothedLook.lerp(lookTarget, 1 - Math.exp(-6 * delta));
@@ -126,26 +157,28 @@ export const Experience = (props) => {
       />
       <ambientLight ref={ambientRef} intensity={section === 0 ? section1Lighting.ambientIntensity : section === 2 ? 0.32 : 0.1} />
 
-      <Postpro section={section} sun={openingSun} companyPortal={companyPortal}
-        thoughtFieldLayout={thoughtFieldLayout} />
+      <Postpro section={section} sun={section === 3 ? contactSun : openingSun} companyPortal={companyPortal}
+        thoughtFieldLayout={thoughtFieldLayout} contactProgress={contactProgress} />
       <ThoughtFieldScene
-        section={section === 2 ? 1 : section}
+        section={section >= 2 ? 1 : section}
         thoughtFieldLayout={thoughtFieldLayout}
         companyIslandRef={companyIslandRef}
         companyIslandLayout={companyIslandLayout}
         onPortalReady={setCompanyPortal}
         openingTransition={openingTransition}
+        contactProgress={contactProgress}
       />
+      <ContactScene progress={contactProgress} onSunReady={setContactSun} />
 
       <group ref={openingRef}>
-        <group position={section === 3 ? [0, -40, -20] : [0, isMobile ? -50 : -45, -112]} scale={section === 3 ? 0.35 : 1}>
+        <group position={[0, isMobile ? -50 : -45, -112]}>
           <Sun ref={setOpeningSun} />
         </group>
-        <group position={section === 3 ? [-80, -36, -70] : [-46, -28, -46]}
-          rotation={[-0.3, 1.1, 0]} scale={officeScaleRatio * (section === 3 ? 0.4 : 1)}>
+        <group position={[-46, -28, -46]}
+          rotation={[-0.3, 1.1, 0]} scale={officeScaleRatio}>
           <Mountain />
         </group>
-        <group position={section === 3 ? [-18, -70, -60] : [0, -23, -36]}
+        <group position={[0, -23, -36]}
           rotation={[-0.3, 3.15, 0]} scale={officeScaleRatio}>
           <Ocean />
         </group>

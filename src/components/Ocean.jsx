@@ -5,7 +5,8 @@ import { Water } from "three-stdlib";
 
 extend({ Water });
 
-function Ocean(props) {
+function Ocean({ waterColor = 0x001e0f, sunColor = 0xffffff,
+  sunDirection = [0, 0, 0], distortionScale = 3.7, ...props }) {
   const ref = useRef();
   const gl = useThree((state) => state.gl);
   const waterNormals = useLoader(THREE.TextureLoader, "/waternormals.jpeg");
@@ -16,14 +17,14 @@ function Ocean(props) {
       textureWidth: 512,
       textureHeight: 512,
       waterNormals,
-      sunDirection: new THREE.Vector3(),
-      sunColor: 0xffffff,
-      waterColor: 0x001e0f,
-      distortionScale: 3.7,
+      sunDirection: new THREE.Vector3(...sunDirection).normalize(),
+      sunColor,
+      waterColor,
+      distortionScale,
       fog: false,
       format: gl.encoding,
     }),
-    [waterNormals]
+    [waterNormals, waterColor, sunColor, sunDirection[0], sunDirection[1], sunDirection[2], distortionScale]
   );
   useFrame((_, delta) => (ref.current.material.uniforms.time.value += delta));
   return (

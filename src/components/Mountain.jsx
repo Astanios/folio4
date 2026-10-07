@@ -10,6 +10,8 @@ import * as THREE from "three";
 export default function Mountain({
   color,
   opacity = 1,
+  roughness,
+  metalness,
   ...props
 }) {
   const { nodes, materials } = useGLTF("/models/mountain.glb");
@@ -19,12 +21,14 @@ export default function Mountain({
     if (color) {
       material.color.multiply(new THREE.Color(color));
     }
+    if (roughness !== undefined) material.roughness = roughness;
+    if (metalness !== undefined) material.metalness = metalness;
 
     material.opacity *= opacity;
     material.transparent = material.transparent || opacity < 1;
 
     return material;
-  }, [color, materials, opacity]);
+  }, [color, materials, opacity, roughness, metalness]);
 
   return (
     <group {...props} dispose={null}>
