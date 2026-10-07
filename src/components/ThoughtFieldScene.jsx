@@ -8,7 +8,6 @@ import ThoughtFieldPlume from "./ThoughtFieldPlume";
 import ThoughtFieldIslands from "./ThoughtFieldIslands";
 import CompanyIslandScene from "./CompanyIslandScene";
 import { THOUGHT_FIELD_LAYOUT } from "./thoughtFieldLayout";
-import useThoughtFieldControls from "./useThoughtFieldControls";
 
 const ORB_BLOOM_COLOR = new THREE.Color(2.3, 1.8, 1.15);
 const PLUME_TILT_AXIS = new THREE.Vector3(0, 0, 1);
@@ -32,8 +31,7 @@ export default function ThoughtFieldScene({ section, thoughtFieldLayout: sourceL
   const { mouse, size } = useThree();
   const isMobile = size.width < 768;
   const isMedium = size.width >= 768 && size.width <= 1500;
-  const { handPosition, handScale, orbPosition, orbScale } = useThoughtFieldControls(sourceLayout, isMobile);
-  const responsiveLayout = useMemo(() => {
+  const thoughtFieldLayout = useMemo(() => {
     if (isMedium) {
       const { popLead, travelScale } = sourceLayout.phrases.medium;
       const originX = sourceLayout.orb.position[0] + sourceLayout.particles.positionX
@@ -72,20 +70,6 @@ export default function ThoughtFieldScene({ section, thoughtFieldLayout: sourceL
       sparks: { ...sourceLayout.sparks, baseX: orbPosition[0], baseY: orbPosition[1], spreadYMobile: 2 },
     };
   }, [isMobile, isMedium, sourceLayout]);
-  const thoughtFieldLayout = useMemo(() => {
-    const orbOffset = orbPosition.map((value, index) => value - responsiveLayout.orb.position[index]);
-    return {
-      ...responsiveLayout,
-      hand: { ...responsiveLayout.hand, position: handPosition, scale: handScale },
-      orb: { ...responsiveLayout.orb, position: orbPosition, scale: orbScale },
-      sparks: {
-        ...responsiveLayout.sparks,
-        baseX: responsiveLayout.sparks.baseX + orbOffset[0],
-        baseY: responsiveLayout.sparks.baseY + orbOffset[1],
-        baseZ: responsiveLayout.sparks.baseZ + orbOffset[2],
-      },
-    };
-  }, [responsiveLayout, handPosition, handScale, orbPosition, orbScale]);
   const plumeTargetQuat = useMemo(() => new THREE.Quaternion(), []);
   const plumeTiltQuat = useMemo(() => new THREE.Quaternion(), []);
   const worldSection = section === 3 ? 0 : 1;

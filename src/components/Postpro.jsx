@@ -7,7 +7,7 @@ import {
 } from "@react-three/postprocessing";
 import { BlendFunction, Resizer, KernelSize } from "postprocessing";
 import { THOUGHT_FIELD_LAYOUT } from "./thoughtFieldLayout";
-import useCompanyPostproControls from "./useCompanyPostproControls";
+import { COMPANY_POSTPRO_DEFAULTS } from "./companyPostproConfig";
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { MathUtils } from "three";
@@ -20,7 +20,7 @@ export const Postpro = ({
   thoughtFieldLayout = THOUGHT_FIELD_LAYOUT,
 }) => {
   const section2Fx = thoughtFieldLayout.effects;
-  const section3Fx = useCompanyPostproControls();
+  const section3Fx = COMPANY_POSTPRO_DEFAULTS;
   const vignette = useRef();
   const grading = useRef();
   const bloom = useRef();

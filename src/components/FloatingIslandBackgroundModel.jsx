@@ -60,6 +60,7 @@ function IslandPart({ part, offset, index, motion, focusedMotion, motionBlend, m
 // partOffsets adds local [x,y,z] offsets to individual authored platform pivots.
 export default function FloatingIslandBackgroundModel({
   scene, satelliteRoots, tint, haze, hazeColor, focus, palette, basePalette, reveal, emissiveIntensity = 0.12,
+  shadowContrast = 0,
   satelliteMotion, focusedSatelliteMotion, motionBlend = focus, motionPhase = 0, renderPart, partOffsets, ...props
 }) {
   const { parts, batches } = useMemo(() => getFloatingIslandParts(scene, satelliteRoots), [scene, satelliteRoots]);
@@ -96,16 +97,21 @@ export default function FloatingIslandBackgroundModel({
     material.onBeforeCompile = (shader) => {
       shader.uniforms.islandHaze = { value: haze };
       shader.uniforms.islandHazeColor = { value: new THREE.Color(hazeColor) };
+      shader.uniforms.islandShadowContrast = { value: shadowContrast };
       material.userData.islandShader = shader;
-      shader.fragmentShader = `uniform float islandHaze;\nuniform vec3 islandHazeColor;\n${shader.fragmentShader}`
+      shader.fragmentShader = `uniform float islandHaze;\nuniform vec3 islandHazeColor;\nuniform float islandShadowContrast;\n${shader.fragmentShader}`
         .replace("#include <output_fragment>", `
           outgoingLight = mix(min(outgoingLight, vec3(0.8)), islandHazeColor, islandHaze);
+          // Preserve the lit colors while gathering the low tones into ink-like
+          // masses. Contact opts in; the floating islands keep their old light.
+          float islandLuminance = dot(outgoingLight, vec3(0.2126, 0.7152, 0.0722));
+          outgoingLight *= mix(1.0, smoothstep(0.008, 0.12, islandLuminance), islandShadowContrast);
           #include <output_fragment>
         `);
     };
-    material.customProgramCacheKey = () => "thought-field-island-haze-v1";
+    material.customProgramCacheKey = () => "thought-field-island-haze-v2";
     return material;
-  }), [batches, baseColors, tint, haze, hazeColor, reveal, emissiveIntensity]);
+  }), [batches, baseColors, tint, haze, hazeColor, reveal, emissiveIntensity, shadowContrast]);
   const tintColor = useMemo(() => new THREE.Color(tint), [tint]);
 
   useFrame(() => {

@@ -87,8 +87,7 @@ export const ScrollManager = ({ section, onSectionChange }) => {
       locked = true;
       targetSection = clamped;
       tween = gsap.to(el, {
-        duration: currentSection.current === 3 || clamped === 3 ? 4.6
-          : currentSection.current <= 1 && clamped <= 1 ? 1.6 : 1,
+        duration: currentSection.current <= 1 && clamped <= 1 ? 1.6 : 1,
         scrollTop: clamped * el.clientHeight,
         overwrite: "auto",
         onUpdate: () => { previousTop = el.scrollTop; },
@@ -203,7 +202,7 @@ export const ScrollManager = ({ section, onSectionChange }) => {
         previousTop = el.scrollTop;
         return;
       }
-      // Keep the menu in sync when dragging the scrollbar into Contact.
+      // Track the current section when dragging the scrollbar into Contact.
       if (el.clientHeight && el.scrollTop / el.clientHeight >= 2.5
         && currentSection.current !== 3) {
         currentSection.current = 3;

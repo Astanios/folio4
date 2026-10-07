@@ -1,10 +1,9 @@
 import { useScroll } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { animate, useMotionValue } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
-import { framerMotionConfig, section1Lighting, sceneCameraConfig } from "../config";
+import { section1Lighting, sceneCameraConfig } from "../config";
 import Ocean from "./Ocean";
 import Sun from "./Sun";
 import Mountain from "./Mountain";
@@ -17,8 +16,7 @@ import SpaceBackground from "./SpaceBackground";
 import ContactScene from "./ContactScene";
 import { CONTACT_WORLD_Y, contactApproach, getContactLayout } from "./contactSceneLayout";
 
-export const Experience = (props) => {
-  const { menuOpened } = props;
+export const Experience = () => {
   const viewport = useSceneViewport();
   const data = useScroll();
   const lightRef = useRef();
@@ -49,18 +47,6 @@ export const Experience = (props) => {
 
   const [section, setSection] = useState(0);
 
-  const cameraPositionX = useMotionValue(0);
-  const cameraLookAtX = useMotionValue(0);
-
-  useEffect(() => {
-    animate(cameraPositionX, menuOpened ? -5 : 0, {
-      ...framerMotionConfig,
-    });
-    animate(cameraLookAtX, menuOpened ? 5 : 0, {
-      ...framerMotionConfig,
-    });
-  }, [menuOpened]);
-
   const thoughtFieldLayout = THOUGHT_FIELD_LAYOUT;
 
   useFrame((state, delta) => {
@@ -88,10 +74,10 @@ export const Experience = (props) => {
     }
 
     const camera = THOUGHT_FIELD_LAYOUT.camera;
-    cameraTarget.set(cameraPositionX.get() + camera.positionOffsetX * ascent,
+    cameraTarget.set(camera.positionOffsetX * ascent,
       THREE.MathUtils.lerp(sceneCameraConfig.position[1], camera.positionY, ascent),
       THREE.MathUtils.lerp(sceneCameraConfig.position[2], camera.positionZ, ascent));
-    lookTarget.set(cameraLookAtX.get() + camera.lookAtOffsetX * ascent,
+    lookTarget.set(camera.lookAtOffsetX * ascent,
       camera.lookAtY * ascent, camera.lookAtZ * ascent);
     if (section === 2 || arrival > 0) {
       // Reset the base every frame so returning from Contact restores the
@@ -115,20 +101,17 @@ export const Experience = (props) => {
       islandTarget.fromArray(isMobile ? companyIslandLayout.targetMobile : companyIslandLayout.target);
       companyIslandRef.current.localToWorld(islandCamera);
       companyIslandRef.current.localToWorld(islandTarget);
-      islandCamera.x += cameraPositionX.get() * 0.25;
       cameraTarget.lerp(islandCamera, progress);
       lookTarget.lerp(islandTarget, progress);
     }
     if (arrival > 0) {
       contactVector.fromArray(contactLayout.camera);
       contactVector.y += CONTACT_WORLD_Y;
-      contactVector.x += cameraPositionX.get() * 0.4;
       cameraTarget.lerp(contactVector, arrival);
       // Back away from the portal before descending toward the water.
       cameraTarget.z += Math.sin(arrival * Math.PI) * 42;
       contactVector.fromArray(contactLayout.target);
       contactVector.y += CONTACT_WORLD_Y;
-      contactVector.x += cameraLookAtX.get() * 0.4;
       lookTarget.lerp(contactVector, arrival);
       lightRef.current.color.lerp(contactLightColor, arrival);
       lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0.55, arrival);
@@ -136,7 +119,7 @@ export const Experience = (props) => {
       lightRef.current.position.lerp(contactVector.set(18, CONTACT_WORLD_Y + 22 - pageLift, -45), arrival);
       lightRef.current.target.position.set(0, CONTACT_WORLD_Y * arrival, 0);
       lightRef.current.target.updateMatrixWorld();
-      ambientRef.current.intensity = THREE.MathUtils.lerp(ambientRef.current.intensity, 0.07, arrival);
+      ambientRef.current.intensity = THREE.MathUtils.lerp(ambientRef.current.intensity, 0.025, arrival);
     } else {
       lightRef.current.target.position.set(0, 0, 0);
       lightRef.current.target.updateMatrixWorld();

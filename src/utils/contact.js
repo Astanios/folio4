@@ -3,8 +3,8 @@ export const CONTACT_LINKS = [
     id: "email",
     platform: "Email",
     label: "Email me",
-    href: "mailto:ldcastillocisnero@gmail.com",
-    address: "ldcastillocisnero@gmail.com",
+    href: "mailto:me@luiscastillo.io",
+    address: "me@luiscastillo.io",
   },
   {
     id: "linkedin",

@@ -1,4 +1,12 @@
-import { Billboard, Html, OrthographicCamera, RenderTexture, useCursor, useGLTF, useScroll } from "@react-three/drei";
+import {
+  Billboard,
+  Html,
+  OrthographicCamera,
+  RenderTexture,
+  useCursor,
+  useGLTF,
+  useScroll,
+} from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -20,7 +28,11 @@ const glowFragment = `
   }
 `;
 const screenReaderStyle = {
-  position: "absolute", width: 1, height: 1, overflow: "hidden", clipPath: "inset(50%)",
+  position: "absolute",
+  width: 1,
+  height: 1,
+  overflow: "hidden",
+  clipPath: "inset(50%)",
 };
 
 // Local typography supplies the RenderTexture scene, whose finished render
@@ -60,12 +72,16 @@ function makeInscription(contact) {
   context.textBaseline = "middle";
   context.fillStyle = "#d9a47e";
   context.font = "500 25px Arial, sans-serif";
-  context.fillText(contact.external ? "STAY CONNECTED" : "LET’S TALK", 512, 157);
+  context.fillText(
+    contact.external ? "STAY CONNECTED" : "LET’S TALK",
+    512,
+    157,
+  );
   context.font = `600 ${contact.external ? 111 : 128}px Arial, sans-serif`;
   context.fillStyle = "#fff3d1";
   context.shadowColor = "#ff993f";
   context.shadowBlur = 17;
-  context.fillText(contact.external ? "LINKEDIN" : "EMAIL", 512, 253, 808);
+  context.fillText(contact.external ? "" : "EMAIL", 512, 253, 808);
   context.shadowBlur = 0;
   const texture = new THREE.CanvasTexture(canvas);
   texture.encoding = THREE.sRGBEncoding;
@@ -91,8 +107,11 @@ export default function ContactScroll({
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [copyStatus, setCopyStatus] = useState("");
-  const [reducedMotion, setReducedMotion] = useState(() =>
-    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const [reducedMotion, setReducedMotion] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
   const scroll = useScroll();
   const portal = useMemo(() => ({ current: scroll.fixed }), [scroll.fixed]);
   const { nodes } = useGLTF("/models/scroll.glb");
@@ -142,17 +161,31 @@ export default function ContactScroll({
 
   useFrame((_, delta) => {
     if (!animated.current || !material.current) return;
-    animated.current.position.z = reducedMotion ? 0 : THREE.MathUtils.damp(
-      animated.current.position.z, highlighted ? hoverDepth : 0, 10, delta);
+    animated.current.position.z = reducedMotion
+      ? 0
+      : THREE.MathUtils.damp(
+          animated.current.position.z,
+          highlighted ? hoverDepth : 0,
+          10,
+          delta,
+        );
     // Both channels share the same single-frame render target.
     if (material.current.emissiveMap !== material.current.map) {
       material.current.emissiveMap = material.current.map;
       material.current.needsUpdate = true;
     }
     material.current.emissiveIntensity = THREE.MathUtils.damp(
-      material.current.emissiveIntensity, highlighted ? 1.5 : 0.9, 10, delta);
+      material.current.emissiveIntensity,
+      highlighted ? 1.5 : 0.9,
+      10,
+      delta,
+    );
     uniforms.opacity.value = THREE.MathUtils.damp(
-      uniforms.opacity.value, highlighted ? 0.3 : 0.12, 10, delta);
+      uniforms.opacity.value,
+      highlighted ? 0.3 : 0.12,
+      10,
+      delta,
+    );
   });
 
   const copyAddress = async () => {
@@ -170,11 +203,32 @@ export default function ContactScroll({
     <group position={position} scale={scale}>
       <group ref={animated}>
         <mesh geometry={geometry} rotation={rotation} castShadow receiveShadow>
-          <meshStandardMaterial ref={material} color="#e6c5ae" roughness={0.88}
-            metalness={0.08} emissive="#ffc990" emissiveIntensity={0.9}>
-            <RenderTexture attach="map" frames={1} width={512} height={256} samples={2}>
-              <OrthographicCamera makeDefault manual position={[0, 0, 5]}
-                left={-1} right={1} top={0.5} bottom={-0.5} near={0.1} far={10} />
+          <meshStandardMaterial
+            ref={material}
+            color="#e6c5ae"
+            roughness={0.88}
+            metalness={0.08}
+            emissive="#ffc990"
+            emissiveIntensity={0.9}
+          >
+            <RenderTexture
+              attach="map"
+              frames={1}
+              width={512}
+              height={256}
+              samples={2}
+            >
+              <OrthographicCamera
+                makeDefault
+                manual
+                position={[0, 0, 5]}
+                left={-1}
+                right={1}
+                top={0.5}
+                bottom={-0.5}
+                near={0.1}
+                far={10}
+              />
               <mesh>
                 <planeGeometry args={[2, 1]} />
                 <meshBasicMaterial map={inscription} toneMapped={false} />
@@ -185,50 +239,125 @@ export default function ContactScroll({
         <Billboard position={[0, 0, -0.08]}>
           <mesh scale={[1.55, 0.95, 1]} raycast={() => null}>
             <planeGeometry />
-            <shaderMaterial uniforms={uniforms} vertexShader={glowVertex}
-              fragmentShader={glowFragment} transparent depthWrite={false}
-              blending={THREE.AdditiveBlending} toneMapped={false} />
+            <shaderMaterial
+              uniforms={uniforms}
+              vertexShader={glowVertex}
+              fragmentShader={glowFragment}
+              transparent
+              depthWrite={false}
+              blending={THREE.AdditiveBlending}
+              toneMapped={false}
+            />
           </mesh>
         </Billboard>
-        {active && <Html center portal={portal} position={labelPosition} zIndexRange={[30, 20]}>
-          <div data-contact-scene style={{ width: labelWidth, textAlign: "center", pointerEvents: "auto", position: "relative" }}
-            onPointerEnter={(event) => { if (event.pointerType !== "touch") setHovered(true); }}
-            onPointerLeave={() => setHovered(false)}
-            onFocus={() => setFocused(true)}
-            onBlur={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
-            }}>
-            <a href={contact.href} target={contact.external ? "_blank" : undefined}
-              rel={contact.external ? "noopener noreferrer" : undefined}
-              aria-label={contact.external ? `${contact.label} (opens in a new tab)` : contact.label}
+        {active && (
+          <Html
+            center
+            portal={portal}
+            position={labelPosition}
+            zIndexRange={[30, 20]}
+          >
+            <div
+              data-contact-scene
               style={{
-                display: "block", height: Math.max(70, labelWidth * 0.45), width: "100%",
-                boxSizing: "border-box", borderRadius: 12,
-                outline: focused ? "1px solid #ffe4ac" : "1px solid transparent",
-                outlineOffset: 5, cursor: "pointer", WebkitTapHighlightColor: "transparent",
-              }}>
-              <span style={screenReaderStyle}>{contact.label}</span>
-            </a>
-            {showAddress && contact.address && <div style={{
-              position: "absolute", top: "100%", width: "100%", paddingTop: 6,
-              font: "10px/1.4 Arial, sans-serif", color: "#efd5b1",
-              textShadow: "0 2px 8px #120d20",
-            }}>
-              <button type="button" onClick={copyAddress} aria-label="Copy email address"
+                width: labelWidth,
+                textAlign: "center",
+                pointerEvents: "auto",
+                position: "relative",
+              }}
+              onPointerEnter={(event) => {
+                if (event.pointerType !== "touch") setHovered(true);
+              }}
+              onPointerLeave={() => setHovered(false)}
+              onFocus={() => setFocused(true)}
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget))
+                  setFocused(false);
+              }}
+            >
+              <a
+                href={contact.href}
+                target={contact.external ? "_blank" : undefined}
+                rel={contact.external ? "noopener noreferrer" : undefined}
+                aria-label={
+                  contact.external
+                    ? `${contact.label} (opens in a new tab)`
+                    : contact.label
+                }
                 style={{
-                  margin: "0 auto", minHeight: 36, minWidth: 88, padding: "5px 8px",
-                  border: 0, borderRadius: 6, background: "transparent", color: "inherit",
-                  font: "inherit", letterSpacing: "0.12em", cursor: "pointer", textShadow: "inherit",
-                }}>
-                {copyStatus === "Email copied" ? "COPIED" : "COPY EMAIL"}
-              </button>
-              {(highlighted || copyStatus === "Select the address to copy") && <span style={{
-                display: "block", userSelect: "text", overflowWrap: "anywhere", letterSpacing: 0,
-              }}>{contact.address}</span>}
-              <span role="status" aria-live="polite" style={screenReaderStyle}>{copyStatus}</span>
-            </div>}
-          </div>
-        </Html>}
+                  display: "block",
+                  height: Math.max(70, labelWidth * 0.45),
+                  width: "100%",
+                  boxSizing: "border-box",
+                  borderRadius: 12,
+                  outline: focused
+                    ? "1px solid #ffe4ac"
+                    : "1px solid transparent",
+                  outlineOffset: 5,
+                  cursor: "pointer",
+                  WebkitTapHighlightColor: "transparent",
+                }}
+              >
+                <span style={screenReaderStyle}>{contact.label}</span>
+              </a>
+              {showAddress && contact.address && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    width: "100%",
+                    paddingTop: 6,
+                    font: "10px/1.4 Arial, sans-serif",
+                    color: "#efd5b1",
+                    textShadow: "0 2px 8px #120d20",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={copyAddress}
+                    aria-label="Copy email address"
+                    style={{
+                      margin: "0 auto",
+                      minHeight: 36,
+                      minWidth: 88,
+                      padding: "5px 8px",
+                      border: 0,
+                      borderRadius: 6,
+                      background: "transparent",
+                      color: "inherit",
+                      font: "inherit",
+                      letterSpacing: "0.12em",
+                      cursor: "pointer",
+                      textShadow: "inherit",
+                    }}
+                  >
+                    {copyStatus === "Email copied" ? "COPIED" : "COPY EMAIL"}
+                  </button>
+                  {(highlighted ||
+                    copyStatus === "Select the address to copy") && (
+                    <span
+                      style={{
+                        display: "block",
+                        userSelect: "text",
+                        overflowWrap: "anywhere",
+                        letterSpacing: 0,
+                      }}
+                    >
+                      {contact.address}
+                    </span>
+                  )}
+                  <span
+                    role="status"
+                    aria-live="polite"
+                    style={screenReaderStyle}
+                  >
+                    {copyStatus}
+                  </span>
+                </div>
+              )}
+            </div>
+          </Html>
+        )}
       </group>
     </group>
   );
