@@ -128,8 +128,8 @@ export default function ContactScene({ progress, onSunReady }) {
           tint="#ac7b9d"
           haze={0.025}
           hazeColor="#34192e"
-          emissiveIntensity={0.003}
-          shadowContrast={0.8}
+          emissiveIntensity={0.008}
+          shadowContrast={0.55}
           satelliteMotion={reducedMotion ? false : COASTAL_MOTION}
           partOffsets={COASTAL_ROCK_OFFSETS}
         />
@@ -147,15 +147,15 @@ export default function ContactScene({ progress, onSunReady }) {
       <group position={layout.island}>
         <pointLight
           position={[5, 8, 7]}
-          intensity={1.2}
+          intensity={1.5}
           color="#ffb077"
           distance={22}
           decay={2}
         />
         <pointLight
-          position={[12, 5, 2]}
-          intensity={0.3}
-          color="#ce66e9"
+          position={[-1, 4, 12]}
+          intensity={0.45}
+          color="#d5a4cf"
           distance={18}
           decay={2}
         />

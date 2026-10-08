@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGLTF } from "@react-three/drei";
 import { getContactFireflyPerches, getContactSignFireflyPerches } from "./contactFireflyPerches";
+import { sampleContactFirefly, assignFireflyLights, advanceFireflyLight } from "./contactFireflyMotion";
 
 // Coordinates are in the normalized floating_island_2 model space. Keep this
 // component under the same position, rotation and scale as the island model.
@@ -33,58 +34,24 @@ function seededRandom(seed) {
 }
 
 const vertexShader = `
-  uniform float uTime;
-  uniform float uSpeed;
   uniform float uPixelHeight;
   uniform float uPixelRatio;
-  attribute vec3 aSpread;
-  attribute vec4 aSeed;
   attribute float aSize;
   attribute vec3 aColor;
-  attribute vec3 aPerch;
-  attribute vec4 aRestCycle;
+  attribute vec3 aGlow;
   varying vec3 vColor;
   varying float vPulse;
   varying float vSizeGlow;
 
   void main() {
-    float time = uTime * uSpeed * aSeed.z;
-    // Each insect changes pace along a gently wandering, fully 3D loop. The
-    // incommensurate frequencies prevent a synchronized orbit or reset seam.
-    float turn = time * 0.34 + aSeed.x;
-    float bend = sin(time * 0.46 + aSeed.y) * 0.42;
-    vec3 flight = vec3(
-      cos(turn + bend) * aSpread.x,
-      (sin(time * 0.74 + aSeed.y) +
-        sin(time * 1.73 + aSeed.x) * 0.24) * aSpread.y,
-      sin(turn * 0.91 + aSeed.y * 0.25) * aSpread.z
-    );
-    float dart = pow(0.5 + 0.5 * sin(time * 0.23 + aSeed.y), 8.0);
-    flight += vec3(sin(time * 3.4), cos(time * 2.7), sin(time * 2.1))
-      * dart * 0.004;
-    // Each insect has its own flight/rest cycle. At full landing weight the
-    // position is exactly fixed to the landing surface, with no flight jitter.
-    float cycle = mod(uTime * uSpeed + aRestCycle.y, aRestCycle.x);
-    float approach = 2.2;
-    float departure = 1.8;
-    float landStart = aRestCycle.x - aRestCycle.z - approach - departure;
-    float landed = smoothstep(landStart, landStart + approach, cycle)
-      * (1.0 - smoothstep(aRestCycle.x - departure, aRestCycle.x, cycle))
-      * aRestCycle.w;
-    vec3 insectPosition = mix(position + flight, aPerch, landed);
-    vec4 viewPosition = modelViewMatrix * vec4(insectPosition, 1.0);
+    vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
     gl_Position = projectionMatrix * viewPosition;
-
     float modelScale = length(modelMatrix[0].xyz);
     float projectedSize = aSize * modelScale * uPixelHeight *
       projectionMatrix[1][1] * 0.5 / max(0.1, -viewPosition.z);
-    // Each insect breathes independently around its previous apparent size.
-    float sizeVariation = 1.0 + 0.3 * sin(uTime * 0.55 + aSeed.x);
-    gl_PointSize = clamp(projectedSize, 2.0 * uPixelRatio, 30.0 * uPixelRatio) * sizeVariation;
-    vSizeGlow = mix(0.85, 1.2, clamp((aSize * sizeVariation - 0.0098) / 0.0305, 0.0, 1.0));
-    float pulse = 0.5 + 0.5 * sin(uTime * aSeed.w + aSeed.y);
-    float restingGlow = 0.58 + 0.08 * sin(uTime * 0.9 + aSeed.y);
-    vPulse = mix(0.25 + 0.75 * pulse * pulse, restingGlow, landed);
+    gl_PointSize = clamp(projectedSize, 2.0 * uPixelRatio, 30.0 * uPixelRatio) * aGlow.y;
+    vPulse = aGlow.x;
+    vSizeGlow = aGlow.z;
     vColor = aColor;
   }
 `;
@@ -116,9 +83,16 @@ export default function ContactFireflies({
   habitats = mobile ? MOBILE_HABITATS : ISLAND_HABITATS,
   signLayout,
   islandScale = 32,
+  lightCount = mobile ? 2 : 4,
+  lightIntensity = 3,
+  lightDistance = 2.2,
   ...props
 }) {
   const time = useRef(0);
+  const root = useRef();
+  const geometry = useRef();
+  const lights = useRef([]);
+  const nextSelection = useRef(0);
   const { scene } = useGLTF("/models/floating_island_2.glb");
   const { nodes: plankNodes } = useGLTF("/models/plank.glb");
   const perches = useMemo(() => getContactFireflyPerches(scene), [scene]);
@@ -175,45 +149,103 @@ export default function ContactFireflies({
     }
     return { position, spread, seed, size, color, perch, restCycle };
   }, [count, habitats, perches, signPerches]);
+  const motion = useMemo(() => {
+    const positions = new Float32Array(count * 3);
+    const glow = new Float32Array(count * 3);
+    const landing = new Float32Array(count);
+    for (let index = 0; index < count; index += 1) {
+      sampleContactFirefly(particles, index, time.current, speed, positions, glow, landing);
+    }
+    return { positions, glow, landing, scores: new Float32Array(count),
+      order: Array.from({ length: count }, (_, index) => index) };
+  }, [particles, count]);
+  const lightSlots = useMemo(() => Array.from(
+    { length: Math.min(count, Math.max(0, Math.floor(lightCount))) },
+    () => ({ index: -1, target: -1, weight: 0 }),
+  ), [particles, count, lightCount]);
+  const projected = useMemo(() => new THREE.Vector3(), []);
   const uniforms = useMemo(() => ({
-    uTime: { value: 0 },
-    uSpeed: { value: speed },
     uIntensity: { value: intensity },
     uPixelHeight: { value: 720 },
     uPixelRatio: { value: 1 },
   }), []);
 
-  useFrame(({ gl, size: viewportSize }, delta) => {
-    // Reduced motion preserves the fireflies as quiet, steady lights.
-    if (!reducedMotion) time.current += Math.min(delta, 0.06);
-    uniforms.uTime.value = time.current;
-    uniforms.uSpeed.value = speed;
+  useFrame(({ gl, size: viewportSize, camera }, delta) => {
+    const dt = Math.min(delta, 0.06);
+    // Preserve the original clock even while the coast is outside the camera.
+    if (!reducedMotion) time.current += dt;
+    for (let parent = root.current; parent; parent = parent.parent) {
+      if (!parent.visible) return;
+    }
     uniforms.uIntensity.value = intensity;
     uniforms.uPixelRatio.value = gl.getPixelRatio();
     uniforms.uPixelHeight.value = viewportSize.height * gl.getPixelRatio();
+    const { positions, glow, landing, scores, order } = motion;
+    for (let index = 0; index < count; index += 1) {
+      sampleContactFirefly(particles, index, time.current, speed, positions, glow, landing);
+    }
+    geometry.current.attributes.position.needsUpdate = true;
+    geometry.current.attributes.aGlow.needsUpdate = true;
+
+    // Favor visible, bright insects close to bark, signs, or the floor. The
+    // short-range light pool is reassigned slowly, never one light per sprite.
+    nextSelection.current -= dt;
+    if (nextSelection.current <= 0) {
+      nextSelection.current = 0.45;
+      root.current.updateWorldMatrix(true, false);
+      for (let index = 0; index < count; index += 1) {
+        const p = index * 3;
+        projected.fromArray(positions, p).applyMatrix4(root.current.matrixWorld).project(camera);
+        if (Math.abs(projected.x) > 1.12 || Math.abs(projected.y) > 1.12 || Math.abs(projected.z) > 1) {
+          scores[index] = 0;
+          continue;
+        }
+        const perchDistance = Math.hypot(positions[p] - particles.perch[p],
+          positions[p + 1] - particles.perch[p + 1], positions[p + 2] - particles.perch[p + 2]);
+        const surfaceDistance = Math.min(perchDistance, Math.abs(positions[p + 1] - FLIGHT_FLOOR)) * islandScale;
+        const proximity = 1 - THREE.MathUtils.smoothstep(surfaceDistance, 0.1, lightDistance);
+        scores[index] = glow[p] * glow[p + 2] * (0.15 + proximity + landing[index] * 0.5);
+      }
+      assignFireflyLights(lightSlots, scores, order);
+    }
+    lightSlots.forEach((slot, slotIndex) => {
+      const light = lights.current[slotIndex];
+      if (!light) return;
+      advanceFireflyLight(slot, dt);
+      if (slot.index < 0) { light.intensity = 0; return; }
+      const p = slot.index * 3;
+      light.position.fromArray(positions, p);
+      light.color.fromArray(particles.color, p);
+      light.intensity = lightIntensity * intensity * glow[p] * glow[p + 2] * slot.weight;
+      // Three's cutoff is in world units, even inside the scaled island group.
+      light.distance = lightDistance * (0.85 + 0.15 * glow[p + 1]);
+    });
   });
 
   return (
-    <points {...props} frustumCulled={false} raycast={() => null}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[particles.position, 3]} />
-        <bufferAttribute attach="attributes-aSpread" args={[particles.spread, 3]} />
-        <bufferAttribute attach="attributes-aSeed" args={[particles.seed, 4]} />
-        <bufferAttribute attach="attributes-aSize" args={[particles.size, 1]} />
-        <bufferAttribute attach="attributes-aColor" args={[particles.color, 3]} />
-        <bufferAttribute attach="attributes-aPerch" args={[particles.perch, 3]} />
-        <bufferAttribute attach="attributes-aRestCycle" args={[particles.restCycle, 4]} />
-      </bufferGeometry>
-      <shaderMaterial
-        uniforms={uniforms}
-        vertexShader={vertexShader}
-        fragmentShader={fragmentShader}
-        blending={THREE.AdditiveBlending}
-        transparent
-        depthWrite={false}
-        depthTest
-        toneMapped={false}
-      />
-    </points>
+    <group ref={root} {...props}>
+      <points frustumCulled={false} raycast={() => null}>
+        <bufferGeometry ref={geometry}>
+          <bufferAttribute attach="attributes-position" args={[motion.positions, 3]} usage={THREE.DynamicDrawUsage} />
+          <bufferAttribute attach="attributes-aGlow" args={[motion.glow, 3]} usage={THREE.DynamicDrawUsage} />
+          <bufferAttribute attach="attributes-aSize" args={[particles.size, 1]} />
+          <bufferAttribute attach="attributes-aColor" args={[particles.color, 3]} />
+        </bufferGeometry>
+        <shaderMaterial
+          uniforms={uniforms}
+          vertexShader={vertexShader}
+          fragmentShader={fragmentShader}
+          blending={THREE.AdditiveBlending}
+          transparent
+          depthWrite={false}
+          depthTest
+          toneMapped={false}
+        />
+      </points>
+      {lightSlots.map((_, index) => (
+        <pointLight key={index} ref={(light) => { lights.current[index] = light; }}
+          intensity={0} distance={lightDistance} decay={2} castShadow={false} />
+      ))}
+    </group>
   );
 }
