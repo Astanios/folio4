@@ -9,6 +9,9 @@ import { LoadingScreen } from "./components/LoadingScreen";
 import { ScrollManager } from "./components/ScrollManager";
 import SceneScroll from "./components/SceneScroll";
 import { framerMotionConfig, sceneCameraConfig } from "./config";
+import PerformanceReadout from "./components/PerformanceReadout";
+
+const showPerformance = new URLSearchParams(window.location.search).get("perf") === "1";
 
 function App() {
   const [section, setSection] = useState(0);
@@ -23,6 +26,7 @@ function App() {
         }}
       >
         <Canvas shadows camera={sceneCameraConfig}>
+          {showPerformance && <PerformanceReadout />}
           <color attach="background" args={["rgb(24, 4, 75)"]} />
           <ScrollControls pages={4} damping={0.1}>
             <ScrollManager section={section} onSectionChange={setSection} />

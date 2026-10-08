@@ -89,6 +89,17 @@ export default function ThoughtFieldSparks({
 
     if (!sparkMeshRef.current) return;
 
+    sparkMeshRef.current.visible = active > 0;
+    if (active <= 0) {
+      // Preserve phase and pointer easing while avoiding invisible matrix work.
+      sparks.forEach((spark) => {
+        spark.t += spark.speed * 0.35;
+        spark.mx += (mouse.x - spark.mx) * 0.02;
+        spark.my += (-mouse.y - spark.my) * 0.02;
+      });
+      return;
+    }
+
     sparks.forEach((spark, index) => {
       let { t, factor, speed, yFactor, zFactor } = spark;
       t = spark.t += speed * (0.35 + active * 0.85);

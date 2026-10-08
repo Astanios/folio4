@@ -59,8 +59,7 @@ function samplePosition(
     3 * inverse * progress ** 2 * control2 +
     progress ** 3 * endZ;
   const forward =
-    drift * particle.travel * depthSpread +
-    pointer.x * 0.45 * 0.12 * drift;
+    drift * particle.travel * depthSpread + pointer.x * 0.45 * 0.12 * drift;
   const lateral =
     particle.spreadY * 1.25 * drift * depthSpread +
     envelope * Math.sin(progress * Math.PI * 2 + particle.index) * 0.35 +
@@ -70,8 +69,14 @@ function samplePosition(
       p.wobbleScale +
     pointer.y * 0.24 * 0.12 * drift;
   target.set(
-    layout.orb.position[0] + p.emissionOffsetX + forward * flowX - lateral * flowY,
-    layout.orb.position[1] + p.emissionOffsetY + forward * flowY + lateral * flowX,
+    layout.orb.position[0] +
+      p.emissionOffsetX +
+      forward * flowX -
+      lateral * flowY,
+    layout.orb.position[1] +
+      p.emissionOffsetY +
+      forward * flowY +
+      lateral * flowX,
     hero
       ? startZ +
           particle.spreadZ * 1.3 * drift +
@@ -114,6 +119,7 @@ export default function ThoughtFieldParticles({
     })),
   );
   const burstValues = useMemo(() => new Float32Array(count).fill(1), [count]);
+  const shellSeeds = useMemo(() => new Float32Array(count), [count]);
   const seedValues = useMemo(
     () =>
       Float32Array.from(
@@ -188,8 +194,11 @@ export default function ThoughtFieldParticles({
       : phrase.bubbleInterval;
     // Restart when timing changes, including a responsive breakpoint crossing,
     // so a carrier cannot skip its pop point without a matching phrase event.
-    if (!wasActive.current || previousInterval.current !== interval
-      || previousFlight.current !== p.bubbleCarrierFlight) {
+    if (
+      !wasActive.current ||
+      previousInterval.current !== interval ||
+      previousFlight.current !== p.bubbleCarrierFlight
+    ) {
       elapsed.current = 0;
       particles.forEach((particle) => {
         particle.lastCycle = null;
@@ -211,12 +220,20 @@ export default function ThoughtFieldParticles({
     groupRef.current.position.set(p.positionX, p.positionY, p.positionZ);
     if (phrase.bubbleHorizontalLanes) {
       groupRef.current.parent.updateWorldMatrix(true, false);
-      rootClip.multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse)
+      rootClip
+        .multiplyMatrices(
+          state.camera.projectionMatrix,
+          state.camera.matrixWorldInverse,
+        )
         .multiply(groupRef.current.parent.matrixWorld);
     }
     materialRef.current.uniforms.uTime.value = time;
     materialRef.current.uniforms.uOpacity.value = p.opacityScale * reveal;
 
+    // Pack only visible instances; logical particles and pop timing stay intact.
+    let shellCount = 0;
+    let coreCount = 0;
+    let dropletCount = 0;
     particles.forEach((particle, index) => {
       const hero = index < heroCount;
       const rate = hero ? 1 / loopSeconds : particle.speed * p.speedMultiplier;
@@ -234,23 +251,35 @@ export default function ThoughtFieldParticles({
         const [flowX, flowY] = p.flowDirection;
         let popX = target[0];
         if (phrase.bubbleHorizontalLanes) {
-          const edge = 1 - 2 * phrase.bubbleViewportPadding / state.size.width;
-          if (horizontalRange(safeRange, rootClip, target[1], target[2], edge)) {
+          const edge =
+            1 - (2 * phrase.bubbleViewportPadding) / state.size.width;
+          if (
+            horizontalRange(safeRange, rootClip, target[1], target[2], edge)
+          ) {
             // Reserve room for the fully revealed text before choosing a lane.
-            const halfWidth = phrase.bubbleMaxWidthMobile * phrase.baseScale * 0.5 + 0.15;
+            const halfWidth =
+              phrase.bubbleMaxWidthMobile * phrase.baseScale * 0.5 + 0.15;
             const left = safeRange.x + halfWidth;
             const right = safeRange.y - halfWidth;
-            popX = left <= right
-              ? THREE.MathUtils.lerp(left, right, phrase.bubbleHorizontalLanes[index])
-              : (safeRange.x + safeRange.y) * 0.5;
+            popX =
+              left <= right
+                ? THREE.MathUtils.lerp(
+                    left,
+                    right,
+                    phrase.bubbleHorizontalLanes[index],
+                  )
+                : (safeRange.x + safeRange.y) * 0.5;
           }
         }
-        const targetX = popX - p.positionX - layout.orb.position[0] - p.emissionOffsetX;
-        const targetY = target[1] - p.positionY - layout.orb.position[1] - p.emissionOffsetY;
+        const targetX =
+          popX - p.positionX - layout.orb.position[0] - p.emissionOffsetX;
+        const targetY =
+          target[1] - p.positionY - layout.orb.position[1] - p.emissionOffsetY;
         const driftAtPop = 1 - Math.pow(1 - popStart, 2);
         // Resolve destinations in the flow's basis; mobile rises along Y.
         particle.travel = (targetX * flowX + targetY * flowY) / driftAtPop;
-        particle.spreadY = (-targetX * flowY + targetY * flowX) / (1.25 * driftAtPop);
+        particle.spreadY =
+          (-targetX * flowY + targetY * flowX) / (1.25 * driftAtPop);
         particle.spreadZ =
           (target[2] -
             p.positionZ -
@@ -300,8 +329,13 @@ export default function ThoughtFieldParticles({
       const rupturing = age >= 0 && age < p.bubbleRuptureSeconds;
       const alive = cycle < popStart;
       if (rupturing) {
-        position.copy(particle.burstPosition);
-        burstValues[index] = age / p.bubbleRuptureSeconds;
+        dummy.position.copy(particle.burstPosition);
+        dummy.rotation.set(0, 0, 0);
+        dummy.scale.setScalar(particle.burstRadius * reveal);
+        dummy.updateMatrix();
+        burstValues[shellCount] = age / p.bubbleRuptureSeconds;
+        shellSeeds[shellCount] = seedValues[index];
+        meshRef.current.setMatrixAt(shellCount++, dummy.matrix);
       } else if (alive) {
         samplePosition(
           position,
@@ -313,30 +347,21 @@ export default function ThoughtFieldParticles({
           popStart,
           isMobile,
         );
-        burstValues[index] = -1;
-      } else {
-        burstValues[index] = 1;
+        // Travelling particles retain their original faceted, additive glow.
+        dummy.position.copy(position);
+        dummy.rotation.set(pulse * 5, pulse * 5, pulse * 5);
+        dummy.scale.setScalar(coreRadius * reveal);
+        dummy.updateMatrix();
+        coresRef.current.setMatrixAt(coreCount, dummy.matrix);
+        const colorBoost =
+          0.5 + particle.brightness * (0.35 + (1 - cycle) * 0.6);
+        color.set(particle.color).multiplyScalar(colorBoost);
+        coresRef.current.setColorAt(coreCount++, color);
       }
-      dummy.position.copy(position);
-      dummy.rotation.set(0, 0, 0);
-      // Keep the approved shell rupture, but only show its film during a pop.
-      dummy.scale.setScalar(rupturing ? particle.burstRadius * reveal : 0);
-      dummy.updateMatrix();
-      meshRef.current.setMatrixAt(index, dummy.matrix);
-
-      // Travelling particles retain their original faceted, additive glow.
-      dummy.rotation.set(pulse * 5, pulse * 5, pulse * 5);
-      dummy.scale.setScalar(alive && !rupturing ? coreRadius * reveal : 0);
-      dummy.updateMatrix();
-      coresRef.current.setMatrixAt(index, dummy.matrix);
-      const colorBoost = 0.5 + particle.brightness * (0.35 + (1 - cycle) * 0.6);
-      color.set(particle.color).multiplyScalar(colorBoost);
-      coresRef.current.setColorAt(index, color);
 
       const dropping = age >= 0 && age < p.bubbleDropletSeconds;
-      for (let drop = 0; drop < DROPLETS_PER_BUBBLE; drop++) {
-        const dropIndex = index * DROPLETS_PER_BUBBLE + drop;
-        if (dropping) {
+      if (dropping) {
+        for (let drop = 0; drop < DROPLETS_PER_BUBBLE; drop++) {
           const angle =
             (drop * Math.PI * 2) / DROPLETS_PER_BUBBLE +
             seedValues[index] * 6.28;
@@ -352,25 +377,33 @@ export default function ThoughtFieldParticles({
           const size =
             particle.burstRadius *
             (0.045 + (drop % 3) * 0.012) *
-            Math.sqrt(fade) * reveal;
+            Math.sqrt(fade) *
+            reveal;
           dummy.scale.set(size, size * (1.8 - age), size);
           dummy.rotation.set(0, 0, angle - Math.PI / 2);
           color.setRGB(1.2 * fade, 1.05 * fade, 0.8 * fade);
-        } else {
-          dummy.scale.setScalar(0);
-          color.setRGB(0, 0, 0);
+          dummy.updateMatrix();
+          dropletsRef.current.setMatrixAt(dropletCount, dummy.matrix);
+          dropletsRef.current.setColorAt(dropletCount++, color);
         }
-        dummy.updateMatrix();
-        dropletsRef.current.setMatrixAt(dropIndex, dummy.matrix);
-        dropletsRef.current.setColorAt(dropIndex, color);
       }
     });
-    meshRef.current.geometry.attributes.aBurst.needsUpdate = true;
-    meshRef.current.instanceMatrix.needsUpdate = true;
-    coresRef.current.instanceMatrix.needsUpdate = true;
-    coresRef.current.instanceColor.needsUpdate = true;
-    dropletsRef.current.instanceMatrix.needsUpdate = true;
-    dropletsRef.current.instanceColor.needsUpdate = true;
+    meshRef.current.count = shellCount;
+    coresRef.current.count = coreCount;
+    dropletsRef.current.count = dropletCount;
+    if (shellCount) {
+      meshRef.current.geometry.attributes.aBurst.needsUpdate = true;
+      meshRef.current.geometry.attributes.aSeed.needsUpdate = true;
+      meshRef.current.instanceMatrix.needsUpdate = true;
+    }
+    if (coreCount) {
+      coresRef.current.instanceMatrix.needsUpdate = true;
+      coresRef.current.instanceColor.needsUpdate = true;
+    }
+    if (dropletCount) {
+      dropletsRef.current.instanceMatrix.needsUpdate = true;
+      dropletsRef.current.instanceColor.needsUpdate = true;
+    }
   }, -1);
 
   return (
@@ -378,6 +411,7 @@ export default function ThoughtFieldParticles({
       <instancedMesh
         ref={coresRef}
         args={[undefined, undefined, count]}
+        count={0}
         frustumCulled={false}
       >
         <dodecahedronGeometry args={[1, 0]} />
@@ -393,6 +427,7 @@ export default function ThoughtFieldParticles({
       <instancedMesh
         ref={meshRef}
         args={[undefined, undefined, count]}
+        count={0}
         frustumCulled={false}
       >
         <sphereGeometry args={[1, 28, 18]}>
@@ -403,7 +438,8 @@ export default function ThoughtFieldParticles({
           />
           <instancedBufferAttribute
             attach="attributes-aSeed"
-            args={[seedValues, 1]}
+            args={[shellSeeds, 1]}
+            usage={THREE.DynamicDrawUsage}
           />
         </sphereGeometry>
         <BubbleShellMaterial ref={materialRef} />
@@ -411,6 +447,7 @@ export default function ThoughtFieldParticles({
       <instancedMesh
         ref={dropletsRef}
         args={[undefined, undefined, count * DROPLETS_PER_BUBBLE]}
+        count={0}
         frustumCulled={false}
       >
         <icosahedronGeometry args={[1, 0]} />
