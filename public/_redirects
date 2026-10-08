@@ -1,0 +1,23 @@
+/.env /404 404!
+/assets/.env /404 404!
+/storage/.env /404 404!
+/resources/.env /404 404!
+/database/.env /404 404!
+/lib/.env /404 404!
+/vendor/.env /404 404!
+/service/.env /404 404!
+/microservice/.env /404 404!
+/gateway/.env /404 404!
+/graphql/.env /404 404!
+/_environment /404 404!
+/webroot/index.php/_environment /404 404!
+/_profiler/phpinfo /404 404!
+/server-info.php /404 404!
+/server-status.php /404 404!
+/mail/phpinfo.php /404 404!
+/cpanel/phpinfo.php /404 404!
+/hosting/phpinfo.php /404 404!
+/webmail/phpinfo.php /404 404!
+/smtp/phpinfo.php /404 404!
+
+/* /index.html 200
