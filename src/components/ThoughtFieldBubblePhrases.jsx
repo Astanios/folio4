@@ -10,7 +10,7 @@ export const THOUGHT_PHRASES = [
   "And this seemed safer than building rockets.",
   "I've stared into the abyss of a minified JavaScript file and felt the abyss stare back",
   `"Expert" is a strong word. I'm more of a "guy who has made all the mistakes."`,
-  "I am proficient in Python, JavaScript and talking to rubber ducks.",
+  "Over a decade of experience in the high-stakes world of pushing pixels and centering divs.",
 ];
 
 export default function ThoughtFieldBubblePhrases({
@@ -22,12 +22,15 @@ export default function ThoughtFieldBubblePhrases({
 }) {
   const groups = useRef([]);
   const texts = useRef([]);
-  const boundsScratch = useMemo(() => ({
-    clipMatrix: new THREE.Matrix4(),
-    textMatrix: new THREE.Matrix4(),
-    corner: new THREE.Vector3(),
-    safeRange: new THREE.Vector2(),
-  }), []);
+  const boundsScratch = useMemo(
+    () => ({
+      clipMatrix: new THREE.Matrix4(),
+      textMatrix: new THREE.Matrix4(),
+      corner: new THREE.Vector3(),
+      safeRange: new THREE.Vector2(),
+    }),
+    [],
+  );
   useFrame((state) => {
     groups.current.forEach((group, index) => {
       if (!group || !texts.current[index]) return;
@@ -68,8 +71,14 @@ export default function ThoughtFieldBubblePhrases({
       group.rotation.z = -0.025;
       group.scale.setScalar(settings.baseScale * (0.2 + 0.8 * reveal));
       if (settings.bubbleHorizontalLanes) {
-        confinePhrase(group, texts.current[index], state.camera, state.size.width,
-          settings.bubbleViewportPadding, boundsScratch);
+        confinePhrase(
+          group,
+          texts.current[index],
+          state.camera,
+          state.size.width,
+          settings.bubbleViewportPadding,
+          boundsScratch,
+        );
       }
       // Each Text owns its derived material; fading one never fades another.
       const material = texts.current[index].material;

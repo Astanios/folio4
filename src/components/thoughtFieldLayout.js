@@ -73,15 +73,29 @@ export const THOUGHT_FIELD_LAYOUT = {
     // Sizes are the longest dimension after normalizing each imported model.
     placements: [
       {
-        id: "continuity-left", model: 2, continuity: true,
-        position: [-32, -27, -130], mobilePosition: [2, -27, -130],
-        size: 10, rotation: [0.04, 0.8, 0.04], haze: 0.58, phase: 8, mobile: true,
+        id: "continuity-left",
+        model: 2,
+        continuity: true,
+        position: [-32, -27, -130],
+        mobilePosition: [2, -27, -130],
+        size: 10,
+        rotation: [0.04, 0.8, 0.04],
+        haze: 0.58,
+        phase: 8,
+        mobile: true,
         travel: { direction: 1, speed: 0.8, amplitude: 1.2, frequency: 0.32 },
       },
       {
-        id: "continuity-right", model: 1, continuity: true,
-        position: [12, -62, -109], mobilePosition: [-25, -62, -109],
-        size: 7, rotation: [-0.02, -0.4, -0.03], haze: 0.7, phase: 9, mobile: true,
+        id: "continuity-right",
+        model: 1,
+        continuity: true,
+        position: [12, -62, -109],
+        mobilePosition: [-25, -62, -109],
+        size: 7,
+        rotation: [-0.02, -0.4, -0.03],
+        haze: 0.7,
+        phase: 9,
+        mobile: true,
         travel: { direction: -1, speed: 0.6, amplitude: 1.4, frequency: 0.28 },
       },
       {
@@ -185,7 +199,7 @@ export const THOUGHT_FIELD_LAYOUT = {
     fontSizeDesktop: 0.31,
     bubbleInterval: 3.6,
     bubbleIntervalMobile: 4.8,
-    bubbleFirstDelay: 2.4,
+    bubbleFirstDelay: 1.2,
     bubbleReadDuration: 8.2,
     bubbleReadDurationMobile: 6.8,
     bubbleRevealDelay: 0.06,
@@ -199,7 +213,7 @@ export const THOUGHT_FIELD_LAYOUT = {
     bubbleHorizontalLanesMobile: [0.14, 0.85, 0.34, 0.72, 0.05, 0.55],
     bubbleViewportPadding: 20,
     medium: {
-      popLead: 1.5,
+      popLead: 0.75,
       travelScale: 0.75,
     },
     // Carrier destinations shared by each bubble and its emerging phrase.
