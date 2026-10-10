@@ -4,14 +4,42 @@ Command: npx gltfjsx@6.2.18 public/models/mountain.glb -o src/components/Mountai
 */
 
 import { useGLTF } from "@react-three/drei";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import * as THREE from "three";
+
+const mountainDetailShader = `
+  varying vec3 vMountainWorldPosition;
+  uniform float uMountainDetail;
+
+  float mountainHash(vec3 point) {
+    point = fract(point * 0.1031);
+    point += dot(point, point.yzx + 33.33);
+    return fract((point.x + point.y) * point.z);
+  }
+
+  float mountainNoise(vec3 point) {
+    vec3 cell = floor(point);
+    vec3 weight = fract(point);
+    weight = weight * weight * (3.0 - 2.0 * weight);
+    return mix(
+      mix(mix(mountainHash(cell), mountainHash(cell + vec3(1, 0, 0)), weight.x),
+          mix(mountainHash(cell + vec3(0, 1, 0)), mountainHash(cell + vec3(1, 1, 0)), weight.x), weight.y),
+      mix(mix(mountainHash(cell + vec3(0, 0, 1)), mountainHash(cell + vec3(1, 0, 1)), weight.x),
+          mix(mountainHash(cell + vec3(0, 1, 1)), mountainHash(cell + vec3(1, 1, 1)), weight.x), weight.y), weight.z);
+  }
+`;
 
 export default function Mountain({
   color,
   opacity = 1,
   roughness,
   metalness,
+  rockSurface = false,
+  detailStrength = 0,
+  hazeColor = "#b88186",
+  hazeNear = 100,
+  hazeFar = 300,
+  hazeStrength = 0,
   ...props
 }) {
   const { nodes, materials } = useGLTF("/models/mountain.glb");
@@ -23,12 +51,86 @@ export default function Mountain({
     }
     if (roughness !== undefined) material.roughness = roughness;
     if (metalness !== undefined) material.metalness = metalness;
+    if (rockSurface) {
+      // The source packs its brightest white patches into its lowest roughness
+      // values, so a high roughness multiplier still leaves glossy fissures.
+      material.metalness = Math.min(material.metalness, 0.03);
+      if (material.isMeshPhysicalMaterial) material.specularIntensity = 0.3;
+    }
 
     material.opacity *= opacity;
     material.transparent = material.transparent || opacity < 1;
 
+    // Keep the shared GLB textures intact. Detail and atmospheric fading are
+    // opt-in so the contact scene retains its existing material and lighting.
+    if (rockSurface || detailStrength > 0 || hazeStrength > 0) {
+      material.onBeforeCompile = (shader) => {
+        Object.assign(shader.uniforms, {
+          uMountainDetail: { value: detailStrength },
+          uMountainHazeNear: { value: hazeNear },
+          uMountainHazeFar: { value: Math.max(hazeNear + 1, hazeFar) },
+          uMountainHazeStrength: { value: hazeStrength },
+          uMountainHazeColor: { value: new THREE.Color(hazeColor) },
+        });
+        if (rockSurface) {
+          shader.fragmentShader = shader.fragmentShader
+            .replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
+              // Retain the map's variation within a dry-rock roughness range.
+              roughnessFactor = 0.76 + 0.18 * clamp(roughnessFactor, 0.0, 1.0);`)
+            .replace("#include <color_fragment>", `#include <color_fragment>
+              // Preserve the albedo markings while compressing pure-white
+              // patches that otherwise bloom like metallic veins at sunset.
+              float mountainWhite = max(diffuseColor.r, max(diffuseColor.g, diffuseColor.b));
+              diffuseColor.rgb *= 1.0 - 0.48 * smoothstep(0.36, 0.9, mountainWhite);`);
+        }
+        if (detailStrength > 0) {
+          shader.vertexShader = shader.vertexShader
+            .replace("#include <common>", "#include <common>\nvarying vec3 vMountainWorldPosition;")
+            .replace("#include <worldpos_vertex>", `#include <worldpos_vertex>
+              vMountainWorldPosition = (modelMatrix * vec4(transformed, 1.0)).xyz;`);
+          shader.fragmentShader = shader.fragmentShader
+            .replace("#include <common>", `#include <common>\n${mountainDetailShader}`)
+            .replace("#include <color_fragment>", `#include <color_fragment>
+              float mountainStrata = mountainNoise(vMountainWorldPosition * vec3(0.18, 0.7, 0.18));
+              diffuseColor.rgb *= 1.0 + (mountainStrata - 0.5) * 0.24 * uMountainDetail;`)
+            .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
+              // Derivative bump adds small rock grain over the original normal
+              // map without adding geometry or another reflection/render pass.
+              float mountainGrain = mountainNoise(vMountainWorldPosition * 4.2) * 0.075
+                + mountainNoise(vMountainWorldPosition * 13.0) * 0.018;
+              vec3 mountainDx = dFdx(-vViewPosition);
+              vec3 mountainDy = dFdy(-vViewPosition);
+              vec3 mountainRx = cross(mountainDy, normal);
+              vec3 mountainRy = cross(normal, mountainDx);
+              float mountainDet = dot(mountainDx, mountainRx);
+              vec3 mountainGradient = dFdx(mountainGrain) * mountainRx + dFdy(mountainGrain) * mountainRy;
+              if (abs(mountainDet) > 0.00000001) {
+                normal = normalize(abs(mountainDet) * normal
+                  - sign(mountainDet) * mountainGradient * uMountainDetail);
+              }`);
+        }
+        if (hazeStrength > 0) {
+          shader.fragmentShader = shader.fragmentShader
+            .replace("#include <common>", `#include <common>
+              uniform float uMountainHazeNear;
+              uniform float uMountainHazeFar;
+              uniform float uMountainHazeStrength;
+              uniform vec3 uMountainHazeColor;`)
+            .replace("#include <output_fragment>", `
+              float mountainHaze = smoothstep(uMountainHazeNear, uMountainHazeFar, length(vViewPosition));
+              outgoingLight = mix(outgoingLight, uMountainHazeColor,
+                clamp(mountainHaze * uMountainHazeStrength, 0.0, 1.0));
+              #include <output_fragment>`);
+        }
+      };
+      material.customProgramCacheKey = () => `mountain-detail-atmosphere-v2-${rockSurface}-${detailStrength > 0}-${hazeStrength > 0}`;
+    }
+
     return material;
-  }, [color, materials, opacity, roughness, metalness]);
+  }, [color, materials, opacity, roughness, metalness, rockSurface, detailStrength,
+    hazeColor, hazeNear, hazeFar, hazeStrength]);
+
+  useEffect(() => () => mountainMaterial.dispose(), [mountainMaterial]);
 
   return (
     <group {...props} dispose={null}>

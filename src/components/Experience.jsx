@@ -4,9 +4,13 @@ import { useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { section1Lighting, sceneCameraConfig } from "../config";
-import Ocean from "./Ocean";
-import Sun from "./Sun";
 import Mountain from "./Mountain";
+import OpeningSun from "./OpeningSun";
+import OpeningAtmosphere from "./OpeningAtmosphere";
+import OpeningRidges from "./OpeningRidges";
+import SunsetOcean from "./SunsetOcean";
+import { getOpeningSun, getOpeningHorizon } from "./openingSceneConfig";
+import { useReducedMotion } from "framer-motion";
 import { Postpro } from "./Postpro";
 import ThoughtFieldScene from "./ThoughtFieldScene";
 import { THOUGHT_FIELD_LAYOUT } from "./thoughtFieldLayout";
@@ -22,7 +26,9 @@ export const Experience = () => {
   const lightRef = useRef();
   const ambientRef = useRef();
   const openingRef = useRef();
+  const openingFillRef = useRef();
   const openingTransition = useRef({ progress: 0 });
+  const openingCloudClock = useRef(0);
   const [openingSun, setOpeningSun] = useState(null);
   const [companyPortal, setCompanyPortal] = useState(null);
   const [contactSun, setContactSun] = useState(null);
@@ -42,8 +48,13 @@ export const Experience = () => {
   const companyIslandLayout = COMPANY_ISLAND_LAYOUT;
 
   const isMobile = size.width < 768;
+  const reducedMotion = useReducedMotion();
+  const openingSunPosition = useMemo(() => getOpeningSun(isMobile), [isMobile]);
   const responsiveRatio = viewport.width / 12;
   const officeScaleRatio = Math.max(0.5, Math.min(0.9 * responsiveRatio, 0.9));
+  const openingHorizon = useMemo(() => getOpeningHorizon(officeScaleRatio), [officeScaleRatio]);
+  // Keep the near coast at the left border as the horizontal field widens.
+  const openingCoastX = -(44 + 14 * size.width / size.height);
 
   const [section, setSection] = useState(0);
 
@@ -62,6 +73,7 @@ export const Experience = () => {
 
     const firstPage = THREE.MathUtils.clamp(data.offset * (data.pages - 1), 0, 1);
     const ascent = THREE.MathUtils.smoothstep(firstPage, 0, 1);
+    openingFillRef.current.intensity = 0.32 * (1 - ascent);
     const arrival = contactApproach(data.offset);
     contactProgress.current = arrival;
     openingTransition.current.progress = firstPage;
@@ -90,7 +102,7 @@ export const Experience = () => {
       lightRef.current.intensity = THREE.MathUtils.lerp(section1Lighting.intensity,
         THOUGHT_FIELD_LAYOUT.section2MountainLight.intensity, ascent);
       lightRef.current.color.copy(openingLightColor).lerp(thoughtLightColor, ascent);
-      lightRef.current.position.fromArray(section1Lighting.position).lerp(
+      lightRef.current.position.fromArray(openingSunPosition).lerp(
         islandTarget.fromArray(THOUGHT_FIELD_LAYOUT.section2MountainLight.position), ascent);
       ambientRef.current.intensity = THREE.MathUtils.lerp(section1Lighting.ambientIntensity, 0.1, ascent);
     }
@@ -135,7 +147,7 @@ export const Experience = () => {
       <SpaceBackground openingTransition={openingTransition} section={section} />
       <directionalLight ref={lightRef}
         intensity={section === 0 ? section1Lighting.intensity : section === 2 ? 0.85 : THOUGHT_FIELD_LAYOUT.section2MountainLight.intensity}
-        position={section === 0 ? section1Lighting.position : section === 2 ? [-10, 20, 20] : THOUGHT_FIELD_LAYOUT.section2MountainLight.position}
+        position={section === 0 ? openingSunPosition : section === 2 ? [-10, 20, 20] : THOUGHT_FIELD_LAYOUT.section2MountainLight.position}
         color={section === 0 ? section1Lighting.color : section === 2 ? "#fff0d4" : THOUGHT_FIELD_LAYOUT.section2MountainLight.color}
       />
       <ambientLight ref={ambientRef} intensity={section === 0 ? section1Lighting.ambientIntensity : section === 2 ? 0.32 : 0.1} />
@@ -154,17 +166,21 @@ export const Experience = () => {
       <ContactScene progress={contactProgress} onSunReady={setContactSun} />
 
       <group ref={openingRef}>
-        <group position={[0, isMobile ? -50 : -45, -112]}>
-          <Sun ref={setOpeningSun} />
-        </group>
-        <group position={[-46, -28, -46]}
+        <hemisphereLight ref={openingFillRef} args={["#c4b6dc", "#8f5548", 0.32]} />
+        <OpeningAtmosphere sunPosition={openingSunPosition} horizonPosition={openingHorizon}
+          sunRadius={isMobile ? 10.5 : 11.5}
+          transition={openingTransition} reducedMotion={reducedMotion} cloudClock={openingCloudClock} />
+        <OpeningSun ref={setOpeningSun} position={openingSunPosition} horizonPosition={openingHorizon}
+          radius={isMobile ? 10.5 : 11.5} cloudClock={openingCloudClock} />
+        <OpeningRidges mobile={isMobile} />
+        <group position={[openingCoastX, -28, -46]}
           rotation={[-0.3, 1.1, 0]} scale={officeScaleRatio}>
-          <Mountain />
+          <Mountain rockSurface detailStrength={0.15} metalness={0.02} roughness={0.9}
+            hazeNear={55} hazeFar={150} hazeStrength={0.18} hazeColor="#b88186" />
         </group>
-        <group position={[0, -23, -36]}
-          rotation={[-0.3, 3.15, 0]} scale={officeScaleRatio}>
-          <Ocean />
-        </group>
+        <SunsetOcean position={[0, -23, -36]} rotation={[-0.3, 3.15, 0]}
+          scale={officeScaleRatio} size={[600, 500]}
+          sunPosition={openingSunPosition} reducedMotion={reducedMotion} />
       </group>
     </>
   );

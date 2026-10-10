@@ -8,6 +8,7 @@ import {
 import { BlendFunction, Resizer, KernelSize } from "postprocessing";
 import { THOUGHT_FIELD_LAYOUT } from "./thoughtFieldLayout";
 import { COMPANY_POSTPRO_DEFAULTS } from "./companyPostproConfig";
+import { OPENING_EFFECTS } from "./openingSceneConfig";
 import { useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { MathUtils } from "three";
@@ -47,7 +48,7 @@ export const Postpro = ({
         ? section2Fx[key] ?? fallback
         : inContactSection
           ? contactFx[key] ?? fallback
-          : fallback;
+          : OPENING_EFFECTS[key] ?? fallback;
   const lightSource = inCompanySection ? companyPortal : sun;
   const raysEnabled = value("godRaysEnabled", true);
   const bloomThreshold = section === 1 ? section2Fx.bloomThreshold : 0;
@@ -108,7 +109,7 @@ export const Postpro = ({
               ? section3Fx.vignetteDarkness
               : inContactSection
                 ? 1.08
-                : 1
+                : section === 0 ? 0.68 : 1
           }
         />
       )}
@@ -132,14 +133,8 @@ export const Postpro = ({
         <HueSaturation
           ref={grading}
           blendFunction={BlendFunction.NORMAL}
-          hue={inCompanySection ? section3Fx.hue : inContactSection ? 0 : 0.1}
-          saturation={
-            inCompanySection
-              ? section3Fx.saturation
-              : inContactSection
-                ? 0.08
-                : 0.7
-          }
+          hue={inCompanySection ? section3Fx.hue : 0}
+          saturation={inCompanySection ? section3Fx.saturation : 0.08}
         />
       )}
       {(!inCompanySection || section3Fx.bloom1Enabled) && (
